@@ -12,7 +12,7 @@ sampler_3_4 <- readRDS("data/sampler_3_4.rds")
 set.seed(112)
 nsim   <- 2e3
 
-params <- lapply(1:nsim, function(i) runif(2, min = -5, max = 5))
+params <- lapply(1:nsim, function(i) runif(2, min = -4, max = 4))
 sizes  <- lapply(1:nsim, function(i) c(rpois(2, 20), 0))
 
 # Putting all together

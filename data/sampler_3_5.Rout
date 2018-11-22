@@ -20,9 +20,8 @@ Type 'q()' to quit R.
 > library(lergm)
 > 
 > # Sampler
-> sampler_3_5 <- new_rlergm(rbernoulli(4) ~ edges + mutual, sizes = 3:5)
-Error: $ operator is invalid for atomic vectors
-In addition: Warning message:
-In parallel::mclapply(ans$networks, function(psets) { :
-  scheduled core 1 encountered error in user code, all values of the job will be affected
+> sampler_3_5 <- new_rlergm(rbernoulli(4) ~ edges + mutual, sizes = 3:5, mc.cores = 1L)
+Error in eval(if (inherits(x, "try-error")) do.call(substitute, list(e,  : 
+  Invalid network on the LHS of the formula.
+Calls: new_rlergm ... summary_formula.default -> ergm.getnetwork -> ERRVL -> eval -> eval
 Execution halted
