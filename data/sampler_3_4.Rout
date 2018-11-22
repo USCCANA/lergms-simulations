@@ -1,0 +1,29 @@
+
+R version 3.5.1 (2018-07-02) -- "Feather Spray"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(lergm)
+> 
+> # Sampler
+> sampler_3_4 <- new_rlergm(rbernoulli(4) ~ edges + mutual, sizes = 2:4)
+> 
+> saveRDS(object = sampler_3_4, file = "data/sampler_3_4.rds", compress=FALSE)
+> 
+> proc.time()
+   user  system elapsed 
+  9.712   0.184   9.616 

@@ -1,0 +1,28 @@
+
+R version 3.5.1 (2018-07-02) -- "Feather Spray"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(lergm)
+> 
+> # Sampler
+> sampler_3_5 <- new_rlergm(rbernoulli(4) ~ edges + mutual, sizes = 3:5)
+Error: $ operator is invalid for atomic vectors
+In addition: Warning message:
+In parallel::mclapply(ans$networks, function(psets) { :
+  scheduled core 1 encountered error in user code, all values of the job will be affected
+Execution halted
