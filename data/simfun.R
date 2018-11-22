@@ -1,4 +1,4 @@
-simfun <- function(d) {
+simfun <- function(d, sampler) {
   
   # Simulating networks
   nets <- NULL

@@ -13,22 +13,21 @@ set.seed(112)
 nsim   <- 2e3
 
 params <- lapply(1:nsim, function(i) runif(2, min = -5, max = 5))
-sizes  <- lapply(1:nsim, function(i) c(0, rpois(1, 40), 0))
+sizes  <- lapply(1:nsim, function(i) c(rpois(2, 20), 0))
 
 # Putting all together
 dat <- Map(function(p,s) {list(par = p, size = s)}, p = params, s = sizes)
 
 # Creating cluster
 opts_sluRm$set_chdir("/staging/ggv/")
-opts_sluRm$set_job_name("01-fixed-sizes-4")
+opts_sluRm$set_job_name("02-various-sizes-3-4")
 opts_sluRm$set_opts(account = "lc_pdt", partition="thomas")
 
 job <- Slurm_lapply(dat, simfun, njobs = 10, mc.cores = 4L, sampler = sampler_3_4)
 ans <- Slurm_collect(job)
 
-saveRDS(ans, "simulations/01-fixed-sizes-4.rds", compress = FALSE)
-saveRDS(dat, "simulations/01-fixed-sizes-4-dat.rds", compress = FALSE)
-
+saveRDS(ans, "simulations/02-various-sizes-3-4.rds", compress = FALSE)
+saveRDS(dat, "simulations/02-various-sizes-3-4-dat.rds", compress = FALSE)
 
 # 
 # 
@@ -51,4 +50,3 @@ saveRDS(dat, "simulations/01-fixed-sizes-4-dat.rds", compress = FALSE)
 #     subtitle = "a"
 #   )
 # 
-
