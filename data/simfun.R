@@ -1,4 +1,4 @@
-simfun <- function(d, sampler) {
+simfun <- function(d, sampler, boot = FALSE) {
   
   # Simulating networks
   nets <- NULL
@@ -9,27 +9,30 @@ simfun <- function(d, sampler) {
   # Checking balance: If the sampling heavily unbalanced, then return NAs
   prop <- lapply(nets, `diag<-`, NA)
   prop <- unlist(prop, recursive = TRUE)
-  prop <- sum(prop == 1, na.rm = TRUE)*sum(prop == 0, na.rm = TRUE)/length(prop)^2
+  prop <- sum(prop == 1, na.rm = TRUE)/sum(!is.na(prop))
   
-  if (prop < .1) {
+  if (min(prop, 1-prop) < .1) {
     null <- d$par
     null[] <- rep(NA, length(null))
     return(
       list(
         coef    = null,
         vcov    = matrix(NA, nrow = length(null), ncol = length(null),
-                      dimnames = list(names(null), names(null))),
+                      dimnames = list(names(null), c("2.5 %", "97.5 %"))),
         balance = prop
       )
     )
   }
     
   # Else we estimate the lergm
-  estimates <- lergm(nets ~ edges + mutual)
+  estimates <- if (!boot) 
+    lergm(nets ~ edges + mutual)
+  else
+    lergm_boot(nets ~ edges + mutual, ncpus = 1L, R=1000)
   
   list(
     coef    = coef(estimates),
-    vcov    = vcov(estimates),
+    vcov    = confint(estimates),
     balance = prop
   )
     

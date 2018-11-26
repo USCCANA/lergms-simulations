@@ -20,14 +20,14 @@ dat <- Map(function(p,s) {list(par = p, size = s)}, p = params, s = sizes)
 
 # Creating cluster
 opts_sluRm$set_chdir("/staging/ggv/")
-opts_sluRm$set_job_name("02-various-sizes-3-4")
-opts_sluRm$set_opts(account = "lc_pdt", partition="thomas")
+opts_sluRm$set_job_name("02-various-sizes-3-4-boot")
+opts_sluRm$set_opts(account = "lc_pdt", partition="thomas", time = "10:00:00")
 
-job <- Slurm_lapply(dat, simfun, njobs = 10, mc.cores = 4L, sampler = sampler_3_4)
+job <- Slurm_lapply(dat, simfun, njobs = 45, mc.cores = 4L, sampler = sampler_3_4, boot = TRUE)
 ans <- Slurm_collect(job)
 
-saveRDS(ans, "simulations/02-various-sizes-3-4.rds", compress = FALSE)
-saveRDS(dat, "simulations/02-various-sizes-3-4-dat.rds", compress = FALSE)
+saveRDS(ans, "simulations/02-various-sizes-3-4-boot.rds", compress = FALSE)
+# saveRDS(dat, "simulations/02-various-sizes-3-4-dat.rds", compress = FALSE)
 
 # 
 # 
