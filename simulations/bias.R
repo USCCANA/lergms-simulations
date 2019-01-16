@@ -1,11 +1,13 @@
 library(ggplot2)
 
 experiments <- c(
-  "01-fixed-sizes-4",
-  "02-various-sizes-3-4"
+  "Distribution of Empirical Bias by parameter (Networks of size 4)" = "01-fixed-sizes-4",
+  "Distribution of Empirical Bias by parameter (Networks of size 3 and 4)" = "02-various-sizes-3-4"
 )
 
-for (e in experiments) {
+for (i in seq_along(experiments)) {
+  
+  e <- experiments[i]
   
   # Reading data
   res <- readRDS(sprintf("simulations/%s.rds", e))
@@ -23,20 +25,27 @@ for (e in experiments) {
     par  = c(rep("edges", nsim), rep("mutual", nsim))
   )
 
-  out <- abs(bias$bias) > 10
-  
+  out <- is.na(bias$bias) 
+
   print(length(which(out)))
-  # bias <- bias[which(!out),,drop=FALSE]
-  bias[out,1] <- ifelse(bias[out,1] > 0, 10, -10)
-  
+  bias <- bias[which(!out),,drop=FALSE]
+
   g <- ggplot(bias, aes(x = par, y = bias)) +
-    geom_jitter() +
+    geom_violin() +
     labs(
-      title     = "Distribution of Empirical Bias",
-      subtitle = "a"
-    )
+      title    = names(experiments)[i],
+      subtitle = sprintf("# of observations %d", sum(!out)/2)
+    ) +
+    geom_abline(intercept = -1, slope = 0, lty=2) +
+    geom_abline(intercept = 1, slope = 0, lty=2) +
+    annotate("text", x = .45, y = 2, label = "1") +
+    annotate("text", x = .45, y = -2, label = "-1") 
   
-  print(g)
+  
+  ggsave(
+    filename = sprintf("simulations/bias-%s.pdf", e),
+    plot = g, width = 8, height = 6
+    )
 
   
 }

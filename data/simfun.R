@@ -1,10 +1,7 @@
-simfun <- function(d, sampler, boot = FALSE) {
+simfun <- function(d, boot = FALSE) {
   
   # Simulating networks
-  nets <- NULL
-  for (i in 1:3)
-    if (d$size[i] > 0)
-      nets <- c(nets, sampler$sample(d$size[i], 2 + i, theta = d$par))
+  nets <- d$nets
   
   # Checking balance: If the sampling heavily unbalanced, then return NAs
   prop <- lapply(nets, `diag<-`, NA)
