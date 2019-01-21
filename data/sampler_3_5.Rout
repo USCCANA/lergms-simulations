@@ -1,5 +1,5 @@
 
-R version 3.5.1 (2018-07-02) -- "Feather Spray"
+R version 3.4.4 (2018-03-15) -- "Someone to Lean On"
 Copyright (C) 2018 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
@@ -17,11 +17,13 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> library(lergm)
+> library(ergmito)
 > 
 > # Sampler
-> sampler_3_5 <- new_rlergm(rbernoulli(4) ~ edges + mutual, sizes = 3:5, mc.cores = 1L)
-Error in eval(if (inherits(x, "try-error")) do.call(substitute, list(e,  : 
-  Invalid network on the LHS of the formula.
-Calls: new_rlergm ... summary_formula.default -> ergm.getnetwork -> ERRVL -> eval -> eval
-Execution halted
+> sampler_3_5 <- new_rergmito(rbernoulli(4) ~ edges + mutual, sizes = 3:5, mc.cores = 1L)
+> 
+> saveRDS(object = sampler_3_5, file = "data/sampler_3_5.rds", compress=FALSE)
+> 
+> proc.time()
+   user  system elapsed 
+ 14.638   1.504  17.802 

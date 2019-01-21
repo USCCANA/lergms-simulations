@@ -1,4 +1,4 @@
-library(lergm)
+library(ergmito)
 library(parallel)
 library(sluRm)
 
@@ -11,7 +11,7 @@ opts_sluRm$set_chdir("/staging/ggv/")
 opts_sluRm$set_job_name("01-fixed-sizes-4")
 opts_sluRm$set_opts(account = "lc_pdt", partition="thomas")
 
-job <- Slurm_lapply(dat, simfun, njobs = 10, mc.cores = 4L)
+job <- Slurm_lapply(dat, simfun, njobs = 20, mc.cores = 4L)
 ans <- Slurm_collect(job)
 
 saveRDS(ans, "simulations/01-fixed-sizes-4.rds", compress = FALSE)
