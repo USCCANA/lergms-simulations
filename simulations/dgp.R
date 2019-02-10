@@ -14,17 +14,17 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 2e3
+nsim   <- 1e4
 
 # Simulating parameters: Scenario A --------------------------------------------
 params_4 <- lapply(1:nsim, function(i) runif(2, min = -2, max = 2))
-sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 45), 0))
+sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 30), 0))
 
 
 # Simulating parameters: Scenario B --------------------------------------------
 
 params_3_5 <- lapply(1:nsim, function(i) runif(2, min = -2, max = 2))
-sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 15))
+sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
 
 # Putting all together ---------------------------------------------------------
 
