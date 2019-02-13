@@ -17,13 +17,13 @@ set.seed(112)
 nsim   <- 1e4
 
 # Simulating parameters: Scenario A --------------------------------------------
-params_4 <- lapply(1:nsim, function(i) runif(2, min = -2, max = 2))
+params_4 <- lapply(1:nsim, function(i) runif(2, min = -4, max = 4))
 sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 30), 0))
 
 
 # Simulating parameters: Scenario B --------------------------------------------
 
-params_3_5 <- lapply(1:nsim, function(i) runif(2, min = -2, max = 2))
+params_3_5 <- lapply(1:nsim, function(i) runif(2, min = -4, max = 4))
 sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
 
 # Putting all together ---------------------------------------------------------
