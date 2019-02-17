@@ -1,3 +1,5 @@
+library(ergmito)
+
 simfun <- function(d, boot = FALSE) {
   
   # Simulating networks
@@ -23,9 +25,9 @@ simfun <- function(d, boot = FALSE) {
     
   # Else we estimate the lergm
   estimates <- if (!boot) 
-    ergmito(nets ~ edges + mutual, optim.args=list(upper=3, lower=-3))
+    ergmito(nets ~ edges + mutual)
   else
-    ergmito_boot(nets ~ edges + mutual, ncpus = 1L, R=1000, optim.args=list(upper=3, lower=-3))
+    ergmito_boot(nets ~ edges + mutual, ncpus = 1L, R=1000)
   
   list(
     coef    = coef(estimates),
