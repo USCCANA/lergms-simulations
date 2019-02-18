@@ -4,4 +4,8 @@
 .Ruserdata
 *.Rout
 *.rout
+*.rds
 *.out
+
+*.pdf
+
