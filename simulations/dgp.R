@@ -14,16 +14,16 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 5e4
+nsim   <- 1e5
 
 # Simulating parameters: Scenario A --------------------------------------------
-params_4 <- lapply(1:nsim, function(i) runif(2, min = -4, max = 4))
+params_4 <- lapply(1:nsim, function(i) runif(2, min = .1, max = 4)*sample(c(-1,1), 2, TRUE))
 sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 30), 0))
 
 
 # Simulating parameters: Scenario B --------------------------------------------
 
-params_3_5 <- lapply(1:nsim, function(i) runif(2, min = -4, max = 4))
+params_3_5 <- lapply(1:nsim, function(i) runif(2, min = .1, max = 4)*sample(c(-1,1), 2, TRUE))
 sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
 
 # Putting all together ---------------------------------------------------------
@@ -31,6 +31,7 @@ sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
 library(sluRm)
 opts_sluRm$set_chdir("/staging/ggv")
 opts_sluRm$set_job_name("ergmito-dgp")
+opts_sluRm$set_opts(time = "04:00:00", account="lc_pdt", partition="thomas")
 opts_sluRm$verbose_on()
 
 # opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
