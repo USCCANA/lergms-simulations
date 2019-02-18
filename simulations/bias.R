@@ -1,8 +1,8 @@
 library(ggplot2)
 
 experiments <- c(
-  "Distribution of Empirical Bias by parameter (Networks of size 4)" = "01-fixed-sizes-4",
-  "Distribution of Empirical Bias by parameter (Networks of size 3 and 4)" = "02-various-sizes-3-4"
+  "Distribution of Empirical Bias (graphs of size 4)" = "01-fixed-sizes-4",
+  "Distribution of Empirical Bias (graphs of sizes 3-5)" = "02-various-sizes-3-5"
 )
 
 for (i in seq_along(experiments)) {
@@ -36,15 +36,18 @@ for (i in seq_along(experiments)) {
       title    = names(experiments)[i],
       subtitle = sprintf("# of observations %d", sum(!out)/2)
     ) +
+    xlab("Parameter") + ylab("Empirical Bias") +
     geom_abline(intercept = -1, slope = 0, lty=2) +
     geom_abline(intercept = 1, slope = 0, lty=2) +
     annotate("text", x = .45, y = 2, label = "1") +
-    annotate("text", x = .45, y = -2, label = "-1") 
+    annotate("text", x = .45, y = -2, label = "-1") +
+    theme_light() +
+    theme(text = element_text(family = "AvantGarde"))
   
   
   ggsave(
     filename = sprintf("simulations/bias-%s.pdf", e),
-    plot = g, width = 8, height = 6
+    plot = g, width = 8*.8, height = 6*.8
     )
 
   
