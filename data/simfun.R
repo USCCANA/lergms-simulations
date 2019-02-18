@@ -1,3 +1,5 @@
+library(ergmito)
+
 simfun <- function(d, boot = FALSE) {
   
   # Simulating networks

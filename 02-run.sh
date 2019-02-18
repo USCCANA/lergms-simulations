@@ -2,7 +2,7 @@
 #SBATCH --job-name="02-various-sizes-3-5"
 #SBATCH --output="02-various-sizes-3-5-slurm%A.out"
 #SBATCH --time="12:00:00"
-#SBATCH --mem-per-cpu=8G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --partition=thomas
 #SBATCH --account=lc_pdt
 #SBATCH --mail-type=ALL

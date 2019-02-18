@@ -14,41 +14,53 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 2e3
+nsim   <- 1e5
 
 # Simulating parameters: Scenario A --------------------------------------------
-params_4 <- lapply(1:nsim, function(i) runif(2, min = -2, max = 2))
-sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 45), 0))
+params_4 <- lapply(1:nsim, function(i) runif(2, min = .1, max = 4)*sample(c(-1,1), 2, TRUE))
+sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 30), 0))
 
 
 # Simulating parameters: Scenario B --------------------------------------------
 
-params_3_5 <- lapply(1:nsim, function(i) runif(2, min = -2, max = 2))
-sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 15))
+params_3_5 <- lapply(1:nsim, function(i) runif(2, min = .1, max = 4)*sample(c(-1,1), 2, TRUE))
+sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
 
 # Putting all together ---------------------------------------------------------
 
-#system("free -h")
+library(sluRm)
+opts_sluRm$set_chdir("/staging/ggv")
+opts_sluRm$set_job_name("ergmito-dgp")
+opts_sluRm$set_opts(time = "04:00:00", account="lc_pdt", partition="thomas")
+opts_sluRm$verbose_on()
 
-#cl <- parallel::makeForkCluster(2L)
+# opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
 
-#system("free -h")
+dgp_4 <- Slurm_Map(function(p, s) {
+      list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
+   },
+   p        = params_4,
+   s        = sizes_4,
+   njobs    = 100,
+   mc.cores = 4,
+   export   = c("sampler_3_5", "simfun")
+)
 
-i <- 0
-dgp_4 <- #parallel::clusterMap(cl, function(p,s) {
-  Map(function(p,s) {
-  message("OK ", (i <<- i + 1))
-  list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
-}, p = params_4, s = sizes_4)
+dgp_4 <- Slurm_collect(dgp_4)
 
-i <- 0
-dgp_3_5 <- #parallel::clusterMap(cl, function(p,s) {
-Map(function(p,s) {
-  message("OK ", (i <<- i + 1))
-  list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
-}, p = params_3_5, s = sizes_3_5)
+dgp_3_5 <- Slurm_Map(function(p, s) {
+     list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
+   },
+   p        = params_3_5,
+   s        = sizes_3_5,
+   njobs    = 100,
+   mc.cores = 4,
+   export   = c("simfun", "sampler_3_5")
+)
 
-#parallel::stopCluster(cl)
+dgp_3_5 <- Slurm_collect(dgp_3_5)
+
 
 saveRDS(dgp_4, "simulations/dgp_4.rds")
 saveRDS(dgp_3_5, "simulations/dgp_3_5.rds")
+
