@@ -33,8 +33,8 @@ for (i in seq_along(experiments)) {
   g <- ggplot(bias, aes(x = par, y = bias)) +
     geom_violin() +
     labs(
-      title    = names(experiments)[i],
-      subtitle = sprintf("# of observations %d", sum(!out)/2)
+      # title    = names(experiments)[i],
+      # subtitle = sprintf("# of observations %d", sum(!out)/2)
     ) +
     xlab("Parameter") + ylab("Empirical Bias") +
     geom_abline(intercept = -1, slope = 0, lty=2) +

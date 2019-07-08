@@ -2,8 +2,8 @@ library(ggplot2)
 library(magrittr)
 
 source("simulations/interval_tags.R")
-intervals        <- c(0, 20, 30, 40, 50, 100)
-intervals_effect <- c(.2, .5, 1, 2, 4)
+intervals        <- c(1, 20, 30, 40, 50, 100)
+intervals_effect <- c(.2, .5, 1, 2, 2.5)
 
 experiments <- c(
    "Distributio of Power by Sample size (Networks of size 4)" = "01-fixed-sizes-4",
