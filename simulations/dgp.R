@@ -14,22 +14,26 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 1.5e5
+nsim   <- 5e3
 
 # Simulating parameters: Scenario A --------------------------------------------
-params_4 <- lapply(1:nsim, function(i) runif(2, min = .1, max = 2)*sample(c(-1,1), 2, TRUE))
+
+# Reducing the sequence of possible values
+U <- seq(from = .1, to = 2, by = .05)
+U <- c(rev(-U), U)
+
+params_4 <- lapply(1:nsim, function(i) sample(U, 2, TRUE))
 sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 30), 0))
 
 
 # Simulating parameters: Scenario B --------------------------------------------
-
-params_3_5 <- lapply(1:nsim, function(i) runif(2, min = .1, max = 2)*sample(c(-1,1), 2, TRUE))
+params_3_5 <- lapply(1:nsim, function(i) sample(U, 2, TRUE))
 sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
 
 # Putting all together ---------------------------------------------------------
 
 library(sluRm)
-opts_sluRm$set_chdir("/staging/ggv")
+opts_sluRm$set_tmp_path("/staging/ggv")
 opts_sluRm$set_job_name("ergmito-dgp")
 opts_sluRm$set_opts(time = "04:00:00") #, account="lc_pdt", partition="thomas")
 opts_sluRm$verbose_on()
@@ -43,7 +47,7 @@ dgp_4 <- Slurm_Map(function(p, s) {
    s        = sizes_4,
    njobs    = 100,
    mc.cores = 4,
-   export   = c("sampler_3_5", "simfun")
+   export   = c("sampler_3_5", "simfun"), plan = "submit"
 )
 
 dgp_4 <- Slurm_collect(dgp_4)
@@ -55,7 +59,7 @@ dgp_3_5 <- Slurm_Map(function(p, s) {
    s        = sizes_3_5,
    njobs    = 100,
    mc.cores = 4,
-   export   = c("simfun", "sampler_3_5")
+   export   = c("simfun", "sampler_3_5"), plan = "submit"
 )
 
 dgp_3_5 <- Slurm_collect(dgp_3_5)

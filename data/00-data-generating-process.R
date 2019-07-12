@@ -1,4 +1,4 @@
-library(lergm)
+library(ergmito)
 library(parallel)
 
 # Sampler
