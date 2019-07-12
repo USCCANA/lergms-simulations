@@ -4,7 +4,7 @@ library(parallel)
 library(sluRm)
 
 # Loading simulation function and data
-source("data/model_fitters.R")
+source("data/fitter.R")
 dat <- readRDS("simulations/dgp_3_5.rds")
 
 # Creating cluster

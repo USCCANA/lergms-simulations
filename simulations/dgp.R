@@ -14,7 +14,7 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 5e3
+nsim   <- 1e4
 
 # Simulating parameters: Scenario A --------------------------------------------
 
