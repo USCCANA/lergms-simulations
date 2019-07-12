@@ -21,10 +21,11 @@ simfun <- function(d, boot = FALSE) {
   
 
   list(
-    coef      = coef(estimates),
-    vcov      = confint(estimates),
-    balance   = prop,
-    optim.out = estimates$optim.out
+    coef       = coef(estimates),
+    vcov       = confint(estimates),
+    balance    = prop,
+    optim.out  = estimates$optim.out,
+    degeneracy = estimates$degeneracy
   )
     
     

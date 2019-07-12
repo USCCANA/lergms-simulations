@@ -35,7 +35,7 @@ sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
 library(sluRm)
 opts_sluRm$set_tmp_path("/staging/ggv")
 opts_sluRm$set_job_name("ergmito-dgp")
-opts_sluRm$set_opts(time = "04:00:00") #, account="lc_pdt", partition="thomas")
+opts_sluRm$set_opts(time = "04:00:00", account="lc_dvc", partition="conti")
 opts_sluRm$verbose_on()
 
 # opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
@@ -45,9 +45,9 @@ dgp_4 <- Slurm_Map(function(p, s) {
    },
    p        = params_4,
    s        = sizes_4,
-   njobs    = 100,
+   njobs    = 50,
    mc.cores = 4,
-   export   = c("sampler_3_5", "simfun"), plan = "submit"
+   export   = c("sampler_3_5", "simfun"), plan = "wait"
 )
 
 dgp_4 <- Slurm_collect(dgp_4)
@@ -59,7 +59,7 @@ dgp_3_5 <- Slurm_Map(function(p, s) {
    s        = sizes_3_5,
    njobs    = 100,
    mc.cores = 4,
-   export   = c("simfun", "sampler_3_5"), plan = "submit"
+   export   = c("simfun", "sampler_3_5"), plan = "wait"
 )
 
 dgp_3_5 <- Slurm_collect(dgp_3_5)

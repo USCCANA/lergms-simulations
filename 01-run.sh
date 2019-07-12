@@ -6,5 +6,5 @@
 #SBATCH --partition=thomas
 #SBATCH --account=lc_pdt
 #SBATCH --mail-type=ALL
-/usr/usc/R/3.4.4/lib64/R/bin/Rscript --vanilla \
+/usr/usc/R/3.5.0/lib64/R/bin/Rscript --vanilla \
 	simulations/01-fixed-sizes-4.R
