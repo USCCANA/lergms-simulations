@@ -22,7 +22,16 @@ fitter <- function(d, boot = FALSE) {
 
   # Getting the blockdiagonal version of the model
   nets_bd <- blockdiagonalize(nets)
-  ans_ergm <- ergm(nets_bd ~ edges + mutual, constrains = ~ blockdiag("block"))
+  ans_ergm <- ergm(
+    nets_bd ~ edges + mutual,
+    constraints = ~ blockdiag("block"),
+    control     = control.ergm(
+      # Default values equal to 1048
+      MCMC.samplesize = 2048L,
+      MCMC.interval   = 2048L
+      )
+    
+    )
   
 
   # Computing loglikelihood under each model

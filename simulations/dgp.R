@@ -1,3 +1,4 @@
+
 # Sampler
 sampler_3_5 <- readRDS("data/sampler_3_5.rds")
 
@@ -16,15 +17,25 @@ simfun <- function(size, par, sampler) {
 set.seed(112)
 nsim   <- 1e4
 
-# Simulating parameters: Scenario A --------------------------------------------
+# Simulating -------------------------------------------------------------------
 
 # Reducing the sequence of possible values
 U <- seq(from = .1, to = 2, by = .05)
 U <- c(rev(-U), U)
 
-# Simulating parameters: Scenario B --------------------------------------------
 params_3_5 <- lapply(1:nsim, function(i) sample(U, 2, TRUE))
-sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
+
+
+sizes <- c(10, 20, 30, 40, 50)
+nsizes <- length(sizes)
+S <- vector("list", nsizes)
+for (i in seq_along(S)) {
+   S[[i]] <- sample.int(sizes[i], nsim/nsizes, TRUE)
+   S[[i]] <- cbind(S[[i]], sizes[i] - S[[i]])
+}
+
+sizes_4_5  <- do.call(rbind, S)
+sizes_4_5 <- lapply(seq_len(nsim), function(i )sizes_4_5[i, ])
 
 # Putting all together ---------------------------------------------------------
 
@@ -36,18 +47,18 @@ opts_sluRm$verbose_on()
 
 # opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
 
-dgp_3_5 <- Slurm_Map(function(p, s) {
+dgp_4_5 <- Slurm_Map(function(p, s) {
      list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
    },
    p        = params_3_5,
-   s        = sizes_3_5,
+   s        = sizes_4_5,
    njobs    = 200,
    mc.cores = 1L,
    export   = c("simfun", "sampler_3_5"), plan = "wait"
 )
 
-dgp_3_5 <- Slurm_collect(dgp_3_5)
+dgp_4_5 <- Slurm_collect(dgp_4_5)
 
 
-saveRDS(dgp_3_5, "simulations/dgp_3_5.rds")
+saveRDS(dgp_4_5, "simulations/dgp_4_5.rds")
 
