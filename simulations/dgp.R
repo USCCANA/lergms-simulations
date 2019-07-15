@@ -1,6 +1,7 @@
 
 # Sampler
-sampler_3_5 <- readRDS("data/sampler_3_5.rds")
+sampler_3_5_ttriad <- readRDS("data/sampler_3_5_ttriad.rds")
+sampler_3_5_mutual <- readRDS("data/sampler_3_5_mutual.rds")
 
 # Function to simulate networks
 simfun <- function(size, par, sampler) {
@@ -47,18 +48,40 @@ opts_sluRm$verbose_on()
 
 # opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
 
-dgp_4_5 <- Slurm_Map(function(p, s) {
-     list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
+# Mutual model
+dgp_4_5_mutual <- Slurm_Map(
+   function(p, s) {
+     list(par = p, size = s, nets = simfun(s, p, sampler_3_5_mutual))
    },
    p        = params_3_5,
    s        = sizes_4_5,
    njobs    = 200,
    mc.cores = 1L,
-   export   = c("simfun", "sampler_3_5"), plan = "wait"
+   export   = c("simfun", "sampler_3_5_mutual"),
+   plan     = "wait",
+   job_name = "ergmito-dgp-mutual"
 )
 
-dgp_4_5 <- Slurm_collect(dgp_4_5)
+dgp_4_5_mutual <- Slurm_collect(dgp_4_5_mutual)
+
+# Transitive triads model
+saveRDS(dgp_4_5_mutual, "simulations/dgp_4_5_mutual.rds")
+
+dgp_4_5_ttriad <- Slurm_Map(
+   function(p, s) {
+      list(par = p, size = s, nets = simfun(s, p, sampler_3_5_ttriad))
+      },
+   p        = params_3_5,
+   s        = sizes_4_5,
+   njobs    = 200,
+   mc.cores = 1L,
+   export   = c("simfun", "sampler_3_5_ttriad"),
+   plan     = "wait",
+   job_name = "ergmito-dgp-ttriad"
+)
+
+dgp_4_5_ttriad <- Slurm_collect(dgp_4_5_ttriad)
 
 
-saveRDS(dgp_4_5, "simulations/dgp_4_5.rds")
+saveRDS(dgp_4_5_ttriad, "simulations/dgp_4_5_ttriad.rds")
 

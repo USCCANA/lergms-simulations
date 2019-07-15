@@ -4,7 +4,7 @@ source("simulations/interval_tags.R")
 
 experiments <- c(
   # "Distribution of Empirical Bias (graphs of size 4)" = "01-fixed-sizes-4",
-  "Distribution of Empirical Bias (graphs of sizes 3-5)" = "02-various-sizes-3-5"
+  "Distribution of Empirical Bias (graphs of sizes 4-5)" = "02-various-sizes-4-5"
 )
 
 for (i in seq_along(experiments)) {
@@ -33,16 +33,17 @@ for (i in seq_along(experiments)) {
     bias <- data.frame(
       bias = c(bias[,1], bias[,2]),
       par  = c(rep("edges", nsim), rep("mutual", nsim)),
-      n3   = c(counts, counts)
+      n    = c(counts, counts)
     )[out,]
     
-    # Building intervals
-    bias$n3_tags <- interval_tags(
-      bias$n3, quantile(bias$n3, c(0, .25, .5, .75, 1))
-      )
+    # # Building intervals
+    # bias$n3_tags <- interval_tags(
+    #   bias$n3, quantile(bias$n3, c(0, .25, .5, .75, 1))
+    #   )
   
-    g <- ggplot(bias, aes(x = n3_tags, y = bias)) +
-      geom_violin(aes(group = n3_tags)) +
+    g <- ggplot(bias, aes(x = n, y = bias)) +
+      geom_violin(aes(group = n)) +
+      ylim(-10, 10) +
       facet_grid(cols = vars(par))  +
       labs(
         title    = paste(names(experiments)[i], "fitted using", m),
@@ -62,9 +63,19 @@ for (i in seq_along(experiments)) {
       filename = sprintf("simulations/bias-%s-%s.pdf", e, m),
       plot = g, width = 8*.8, height = 6*.8
       )
-    
-    
 
   }
+  
+  # Side by side bias ----------------------------------------------------------
+  
+  pars <- lapply(dgp, "[[", "par")
+  
+  bias_ergm <- lapply(lapply(res, "[[", "ergm"), "[[", "coef")
+  bias_ergm <- do.call(rbind, bias_ergm) - do.call(rbind, pars)
+  
+  bias_ergmito <- lapply(lapply(res, "[[", "ergmito"), "[[", "coef")
+  bias_ergmito <- do.call(rbind, bias_ergmito) - do.call(rbind, pars)
+  
+  hist(abs(bias_ergm) - abs(bias_ergmito))
 }
 

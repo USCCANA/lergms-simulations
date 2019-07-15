@@ -2,12 +2,11 @@ library(ggplot2)
 library(magrittr)
 
 source("simulations/interval_tags.R")
-intervals        <- c(1, 20, 30, 40, 50, 100)
 intervals_effect <- c(.2, .5, 1, 2, 2.5)
 
 experiments <- c(
    # "Distributio of Power by Sample size (Networks of size 4)" = "01-fixed-sizes-4",
-   "(Networks of size 3 and 5)" = "02-various-sizes-3-5" #,
+   "(Networks of size 4 and 5)" = "02-various-sizes-4-5" #,
    # "Distributio of Power by Sample size (Networks of size 4, bootstrap CI)" = "01-fixed-sizes-4-boot",
    # "Distributio of Power by Sample size (Networks of size 3 and 4, bootstrap CI)" = "02-various-sizes-3-4-boot"
 )
@@ -64,7 +63,7 @@ for (i in seq_along(experiments)) {
     
     # Generating tags
     power_edges <- dplyr::tibble(
-      `Sample size` = interval_tags(size, intervals),
+      `Sample size` = size,
       `Effect Size` = interval_tags(abs(pars[, 1]), intervals_effect),
       power         = edges
     ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
@@ -74,7 +73,7 @@ for (i in seq_along(experiments)) {
         )
     
     power_mutual <- dplyr::tibble(
-      `Sample size` = interval_tags(size, intervals),
+      `Sample size` = size,
       `Effect Size` = interval_tags(abs(pars[, 2]), intervals_effect),
       power = mutual
     ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
@@ -85,7 +84,7 @@ for (i in seq_along(experiments)) {
     
     # Coverage
     coverage_edges <- dplyr::tibble(
-      `Sample size` = interval_tags(size, intervals)[ids_cov_edges],
+      `Sample size` = size[ids_cov_edges],
       `Effect Size` = interval_tags(abs(pars[, 1]), intervals_effect)[ids_cov_edges],
       power         = edges_cov
     ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
@@ -95,7 +94,7 @@ for (i in seq_along(experiments)) {
       )
     
     coverage_mutual <- dplyr::tibble(
-      `Sample size` = interval_tags(size, intervals)[ids_cov_mutual],
+      `Sample size` = size[ids_cov_mutual],
       `Effect Size` = interval_tags(abs(pars[, 2]), intervals_effect)[ids_cov_mutual],
       power = mutual_cov
     ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
