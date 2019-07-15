@@ -22,10 +22,6 @@ nsim   <- 1e4
 U <- seq(from = .1, to = 2, by = .05)
 U <- c(rev(-U), U)
 
-params_4 <- lapply(1:nsim, function(i) sample(U, 2, TRUE))
-sizes_4  <- lapply(1:nsim, function(i) c(0, rpois(1, 30), 0))
-
-
 # Simulating parameters: Scenario B --------------------------------------------
 params_3_5 <- lapply(1:nsim, function(i) sample(U, 2, TRUE))
 sizes_3_5  <- lapply(1:nsim, function(i) rpois(3, 10))
@@ -40,31 +36,18 @@ opts_sluRm$verbose_on()
 
 # opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
 
-dgp_4 <- Slurm_Map(function(p, s) {
-      list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
-   },
-   p        = params_4,
-   s        = sizes_4,
-   njobs    = 50,
-   mc.cores = 4,
-   export   = c("sampler_3_5", "simfun"), plan = "wait"
-)
-
-dgp_4 <- Slurm_collect(dgp_4)
-
 dgp_3_5 <- Slurm_Map(function(p, s) {
      list(par = p, size = s, nets = simfun(s, p, sampler_3_5))
    },
    p        = params_3_5,
    s        = sizes_3_5,
-   njobs    = 100,
-   mc.cores = 4,
+   njobs    = 200,
+   mc.cores = 1L,
    export   = c("simfun", "sampler_3_5"), plan = "wait"
 )
 
 dgp_3_5 <- Slurm_collect(dgp_3_5)
 
 
-saveRDS(dgp_4, "simulations/dgp_4.rds")
 saveRDS(dgp_3_5, "simulations/dgp_3_5.rds")
 
