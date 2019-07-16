@@ -8,15 +8,14 @@ simfun <- function(size, par, sampler) {
   
   # Simulating networks
   nets <- NULL
-  for (i in 1:3)
-    if (size[i] > 0)
-      nets <- c(nets, sampler$sample(size[i], 2 + i, theta = par))
-    
+  nets <- c(nets, sampler$sample(size[1], 4, theta = par))
+  nets <- c(nets, sampler$sample(size[2], 5, theta = par))
+   
   nets
 }
 
 set.seed(112)
-nsim   <- 1e4
+nsim   <- 1e3
 
 # Simulating -------------------------------------------------------------------
 
@@ -46,7 +45,7 @@ opts_sluRm$set_job_name("ergmito-dgp")
 opts_sluRm$set_opts(time = "04:00:00", account="lc_dvc", partition="conti")
 opts_sluRm$verbose_on()
 
-# opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
+opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
 
 # Mutual model
 dgp_4_5_mutual <- Slurm_Map(
