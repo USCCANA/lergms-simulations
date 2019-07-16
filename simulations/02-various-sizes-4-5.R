@@ -21,7 +21,7 @@ opts_sluRm$set_opts(
 # Checking veb
 opts_sluRm$verbose_on()
 
-job <- Slurm_lapply(dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait")
+job <- Slurm_lapply(dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait", model = ~ edges + mutual)
 ans <- Slurm_collect(job)
 
 saveRDS(ans, "simulations/02-various-sizes-4-5-mutual.rds", compress = FALSE)
@@ -43,7 +43,7 @@ opts_sluRm$set_opts(
 # Checking veb
 opts_sluRm$verbose_on()
 
-job <- Slurm_lapply(dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait")
+job <- Slurm_lapply(dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait", model = ~ edges + ttriad)
 ans <- Slurm_collect(job)
 
 saveRDS(ans, "simulations/02-various-sizes-4-5-ttriad.rds", compress = FALSE)

@@ -1,7 +1,7 @@
 # library(ergmito)
 # library(ergm)
 
-fitter <- function(d, boot = FALSE) {
+fitter <- function(model, d, boot = FALSE) {
   
   # Simulating networks
   nets <- d$nets
@@ -12,26 +12,30 @@ fitter <- function(d, boot = FALSE) {
   prop <- sum(prop == 1, na.rm = TRUE)/sum(!is.na(prop))
   
   # Estimating the ERGM
+  model <- update.formula(model, nets ~ .)
+  environment(model) <- environment()
   ans_ergmito <- if (!boot) 
-    tryCatch(ergmito(nets ~ edges + mutual, ntries = 1L), error = function(e) e)
+    tryCatch(ergmito(model, ntries = 1L), error = function(e) e)
   else
-    ergmito_boot(nets ~ edges + mutual, ncpus = 1L, R=1000)
+    ergmito_boot(model, ncpus = 1L, R=1000)
   
   # if (inherits(ans_ergmito, "error"))
   #   return(ans_ergmito)
 
   # Getting the blockdiagonal version of the model
   nets_bd <- blockdiagonalize(nets)
-  ans_ergm <- ergm(
-    nets_bd ~ edges + mutual,
+  model <- update.formula(model, nets_bd ~ .)
+  environment(model) <- environment()
+  ans_ergm <- tryCatch(ergm(
+    model,
     constraints = ~ blockdiag("block"),
     control     = control.ergm(
       # Default values equal to 1048
-      MCMC.samplesize = 2048L,
-      MCMC.interval   = 2048L
+      MCMC.samplesize = 2048L/2L,
+      MCMC.interval   = 2048L/2L
       )
     
-    )
+    ), error = function(e) e)
   
 
   # Computing loglikelihood under each model
@@ -52,12 +56,15 @@ fitter <- function(d, boot = FALSE) {
     degeneracy = ans_ergmito$degeneracy
   )
 
-  estimates_ergm <- list(
-    coef = coef(ans_ergm),
-    ci   = confint(ans_ergm),
-    vcov = vcov(ans_ergm),
-    ll   = llfun(coef(ans_ergm))
-  )
+  if (inherits(ans_ergm, "ergm")) {
+    estimates_ergm <- list(
+      coef = coef(ans_ergm),
+      ci   = confint(ans_ergm),
+      vcov = vcov(ans_ergm),
+      ll   = llfun(coef(ans_ergm))
+    )
+  } else
+    estimates_ergm <- ans_ergm
   
   list(
     ergmito    = estimates_ergmito,
