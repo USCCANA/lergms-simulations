@@ -31,8 +31,8 @@ fitter <- function(model, d, boot = FALSE) {
     constraints = ~ blockdiag("block"),
     control     = control.ergm(
       # Default values equal to 1048
-      MCMC.samplesize = 2048L/2L,
-      MCMC.interval   = 2048L/2L
+      MCMC.samplesize = 2048L,
+      MCMC.interval   = 2048L
       )
     
     ), error = function(e) e)
@@ -61,7 +61,10 @@ fitter <- function(model, d, boot = FALSE) {
       coef = coef(ans_ergm),
       ci   = confint(ans_ergm),
       vcov = vcov(ans_ergm),
-      ll   = llfun(coef(ans_ergm))
+      ll   = llfun(coef(ans_ergm)),
+      degeneracy = any(is.infinite(
+        ergm.degeneracy(ans_ergm)$degeneracy.value)
+      )
     )
   } else
     estimates_ergm <- ans_ergm

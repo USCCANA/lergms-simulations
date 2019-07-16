@@ -21,10 +21,10 @@ opts_sluRm$set_opts(
 # Checking veb
 opts_sluRm$verbose_on()
 
-job <- Slurm_lapply(dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait", model = ~ edges + mutual)
-ans <- Slurm_collect(job)
-
-saveRDS(ans, "simulations/02-various-sizes-4-5-mutual.rds", compress = FALSE)
+job1 <- Slurm_lapply(
+   dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait",
+   model = ~ edges + mutual
+   )
 
 cat("~~ THE END mutual ~~")
 
@@ -43,9 +43,19 @@ opts_sluRm$set_opts(
 # Checking veb
 opts_sluRm$verbose_on()
 
-job <- Slurm_lapply(dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait", model = ~ edges + ttriad)
-ans <- Slurm_collect(job)
+job2 <- Slurm_lapply(
+   dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait",
+   model = ~ edges + ttriad
+   )
 
-saveRDS(ans, "simulations/02-various-sizes-4-5-ttriad.rds", compress = FALSE)
+cat("~~ THE END ttriad ... COLLECTING ~~")
 
-cat("~~ THE END ttriad ~~")
+# Waiting just in case
+Sys.sleep(60*2)
+
+ans1 <- Slurm_collect(job1)
+ans2 <- Slurm_collect(job2)
+saveRDS(ans1, "simulations/02-various-sizes-4-5-mutual.rds", compress = FALSE)
+saveRDS(ans2, "simulations/02-various-sizes-4-5-ttriad.rds", compress = FALSE)
+
+cat("~~ THE END ALL ~~")

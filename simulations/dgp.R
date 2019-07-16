@@ -15,7 +15,7 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 1e3
+nsim   <- 2e3
 
 # Simulating -------------------------------------------------------------------
 
