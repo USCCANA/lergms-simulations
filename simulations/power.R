@@ -1,194 +1,125 @@
 library(ggplot2)
 library(magrittr)
+library(data.table)
 
 source("simulations/interval_tags.R")
-intervals_effect <- c(.2, .5, 1, 2, 2.5)
+intervals_effect <- c(.1, .5, 1, 2)
+
 
 experiments <- c(
-   # "Distributio of Power by Sample size (Networks of size 4)" = "01-fixed-sizes-4",
-   "(Networks of size 4 and 5)" = "02-various-sizes-4-5" #,
-   # "Distributio of Power by Sample size (Networks of size 4, bootstrap CI)" = "01-fixed-sizes-4-boot",
-   # "Distributio of Power by Sample size (Networks of size 3 and 4, bootstrap CI)" = "02-various-sizes-3-4-boot"
+  "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual",
+  "Distribution of Empirical Bias (ttriad)" = "02-various-sizes-4-5-ttriad"
 )
 
+# Colors to be used to fill the plots
+fillcols <- c(ergm = "gray", ergmito="black")
+fillcols[] <- adjustcolor(fillcols, alpha.f = .7) 
 
 for (i in seq_along(experiments)) {
   
-  e <- experiments[i]
+  e         <- experiments[i]
+  term_name <- c("edges", gsub(".+[-](?=[a-zA-Z]+$)", "", e, perl = TRUE))
   
   # Reading data
-  # res <- readRDS(sprintf("simulations/%s.rds", e))
-  dgp <- readRDS(sprintf("simulations/%s-dat.rds", gsub("-boot$", "", e)))
+  res  <- readRDS(sprintf("simulations/%s.rds", e))
+  dgp  <- readRDS(sprintf("simulations/%s-dat.rds", e))
+  pars <- lapply(dgp, "[[", "par")
   
-  for (m in c("ergm", "ergmito")) {
+  sizes <- lapply(dgp, "[[", "size")
+  sizes <- sapply(sizes, sum)
+  sizes <- sort(unique(unlist(sizes)))
   
-    res <- lapply(readRDS(sprintf("simulations/%s.rds", e)), "[[", m)
-    
-    nsim <- length(res)
-    
-    # Complete cases
-    # Droping the Inf
-    include <- lapply(res, "[[", "coef") %>% do.call(rbind, .)
-    include[!is.finite(include)] <- NA
-    include <- complete.cases(include)
-    
-    # Computing bias
-    ci   <- lapply(res, "[[", "ci")[include]
-    
-    # Obtaining confidence intervals
-    ci_edges  <- lapply(ci, "[", i="edges", j=,drop=FALSE) %>% do.call(rbind, .)
-    ci_mutual <- lapply(ci, "[", i="mutual", j=,drop=FALSE) %>% do.call(rbind, .)
-    
-    # Obtaining parameters
-    pars <- lapply(dgp, "[[", "par")[include] %>% do.call(rbind, .)
-    size <- lapply(dgp, "[[", "size")[include] %>% do.call(rbind, .) %>% rowSums
-    
-    # Coverage probability
-    ids_cov_edges <- sign(ci_edges[, 1L]) == sign(ci_edges[, 2L])
-    edges_cov <- (ci_edges[ids_cov_edges,1L] <= pars[ids_cov_edges,1L]) & (ci_edges[ids_cov_edges,2L] >= pars[ids_cov_edges,1L])
-    ids_cov_mutual <- sign(ci_mutual[, 1L]) == sign(ci_mutual[, 2L])
-    mutual_cov <-(ci_mutual[ids_cov_mutual,1L] <= pars[ids_cov_mutual,2L]) & (ci_mutual[ids_cov_mutual,2L] >= pars[ids_cov_mutual,2L])
-    
-    # Looking at power
+  sizes_labs <- structure(paste(sizes, "nets."), names = sizes)
   
-    # Edges
-    edges <-
-      (sign(ci_edges[,1]) == sign(ci_edges[,2])) & # Significant 
-      (sign(ci_edges[,1]) == sign(pars[,1L]))      # In the right direction
-
-    # Mutual
-    mutual <-
-      (sign(ci_mutual[,1]) == sign(ci_mutual[,2])) & # Significant 
-      (sign(ci_mutual[,1]) == sign(pars[,2L]))      # In the right direction
-    
-    # Generating tags
-    power_edges <- dplyr::tibble(
-      `Sample size` = size,
-      `Effect Size` = interval_tags(abs(pars[, 1]), intervals_effect),
-      power         = edges
-    ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
-      dplyr::summarise(
-        Power   = mean(power, na.rm=TRUE),
-        N       = n()
-        )
-    
-    power_mutual <- dplyr::tibble(
-      `Sample size` = size,
-      `Effect Size` = interval_tags(abs(pars[, 2]), intervals_effect),
-      power = mutual
-    ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
-      dplyr::summarise(
-        Power   = mean(power, na.rm=TRUE),
-        N       = n()
-      )
-    
-    # Coverage
-    coverage_edges <- dplyr::tibble(
-      `Sample size` = size[ids_cov_edges],
-      `Effect Size` = interval_tags(abs(pars[, 1]), intervals_effect)[ids_cov_edges],
-      power         = edges_cov
-    ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
-      dplyr::summarise(
-        Coverage = mean(power, na.rm=TRUE),
-        N        = n()
-      )
-    
-    coverage_mutual <- dplyr::tibble(
-      `Sample size` = size[ids_cov_mutual],
-      `Effect Size` = interval_tags(abs(pars[, 2]), intervals_effect)[ids_cov_mutual],
-      power = mutual_cov
-    ) %>% dplyr::group_by(`Sample size`, `Effect Size`) %>%
-      dplyr::summarise(
-        Coverage = mean(power, na.rm=TRUE),
-        N        = n()
-      )
-    
-    # Writing table output
-    capture.output({
-      pander::pandoc.table(
-        power_edges,
-        digits = 2,
-        caption = names(experiments)[i],
-        keep.trailing.zeros = TRUE
-      )
-    }, file = sprintf("simulations/power-edges-%s-%s.md", e, m))
-    
-    capture.output({
-      pander::pandoc.table(
-        power_mutual,
-        digits = 2,
-        caption = names(experiments)[i],
-        keep.trailing.zeros = TRUE
-        )
-    }, file = sprintf("simulations/power-mutual-%s-%s.md", e, m))
-    
-    
-    # Binding and plotting - POWER ---------------------------------------------
-    dat <- rbind(
-      cbind(power_mutual, Parameter = rep("Mutual", nrow(power_mutual))),
-      cbind(power_edges, Parameter  = rep("Edges", nrow(power_edges)))
-      ) %>%
-      subset(!is.na(`Effect Size`)) %>%
-      dplyr::mutate(
-        `Effect Size` = paste("Effect size in", `Effect Size`)
-      )
-    
-    set.seed(1)
-    ggplot(dat, aes(x = `Sample size`, y = Power, colour = Parameter)) +
-      facet_wrap(~ `Effect Size`, nrow = 2, ncol = 2) + 
-      scale_color_grey() +
-      geom_line(aes(group=Parameter), linetype=2) +
-      geom_point(aes(size = N)) +
-      xlab("# of networks per sample") +
-      ylab("Empirical Power") + 
-      ylim(0, 1) + 
-      theme_light() +
-      labs(
-        title    = paste("Empirical Power", names(experiments)[i], "fitted using", m),
-        subtitle = sprintf("# of observations %d (%d discarded due to Inf)", sum(include), sum(!include))
-      ) +
-      theme(
-        text = element_text(family = "AvantGarde"),
-        axis.text.x = element_text(angle = 45)
-        ) +
-      ggsave(
-        sprintf("simulations/power-%s-%s.pdf", e, m),
-        width = 8*.8, height = 6*.8
-      )
-    
-    # Binding and plotting - COVERAGE ------------------------------------------
-    dat <- rbind(
-      cbind(coverage_mutual, Parameter = rep("Mutual", nrow(coverage_mutual))),
-      cbind(coverage_edges, Parameter  = rep("Edges", nrow(coverage_edges)))
-    ) %>%
-      subset(!is.na(`Effect Size`)) %>%
-      dplyr::mutate(
-        `Effect Size` = paste("Effect size in", `Effect Size`)
-      )
-    
-    set.seed(1)
-    ggplot(dat, aes(x = `Sample size`, y = Coverage, colour = Parameter)) +
-      facet_wrap(~ `Effect Size`, nrow = 2, ncol = 2) + 
-      scale_color_grey() +
-      geom_line(aes(group=Parameter), linetype=2) +
-      geom_point(aes(size = N)) +
-      xlab("# of networks per sample") +
-      ylab("Empirical Coverage") + 
-      ylim(0, 1) + 
-      theme_light() +
-      labs(
-        title    = paste("Empirical Coverage", names(experiments)[i], "fitted using", m),
-        subtitle = sprintf("# of observations %d (%d discarded due to Inf)", sum(include), sum(!include))
-      ) +
-      theme(
-        text = element_text(family = "AvantGarde"),
-        axis.text.x = element_text(angle = 45)
-      ) +
-      ggsave(
-        sprintf("simulations/coverage-%s-%s.pdf", e, m),
-        width = 8*.8, height = 6*.8
-      )
-  }
+  # Found by ERGM
+  fitted_ergm <- lapply(lapply(res, "[[", "ergm"), "[[", "ci")
+  fitted_ergm <- which(
+    !sapply(fitted_ergm, is.null) &
+      !sapply(fitted_ergm, function(i) any(is.infinite(i))) &
+      !sapply(fitted_ergm, function(i) any(is.na(i)))
+  )
+  
+  fitted_ergmito <- lapply(lapply(res, "[[", "ergmito"), "[[", "ci")
+  fitted_ergmito <- which(
+    !sapply(fitted_ergmito, is.null) &
+      !sapply(fitted_ergmito, function(i) any(is.infinite(i))) &
+      !sapply(fitted_ergmito, function(i) any(is.na(i)))
+  )
+  
+  fitted_common <- intersect(fitted_ergm, fitted_ergmito)
+  nfitted <- length(fitted_common)
+  
+  # Ergm ---------------------------------------
+  power_ergm <- res[fitted_common] %>%
+    lapply("[[", "ergm") %>%
+    lapply("[[", "ci")
+  
+  # Edges
+  power_ergm_edges <- lapply(power_ergm, "[", i=1, j=) %>%
+    do.call(rbind, .) %>%
+    {sign(.[,1]) == sign(.[,2])}
+  
+  # Other term
+  power_ergm_term2 <- lapply(power_ergm, "[", i=2, j=) %>%
+    do.call(rbind, .) %>%
+    {sign(.[,1]) == sign(.[,2])}
+  
+  # Ergmito ----------------------
+  power_ergmito <- res[fitted_common] %>%
+    lapply("[[", "ergmito") %>%
+    lapply("[[", "ci")
+  
+  # Edges
+  power_ergmito_edges <- lapply(power_ergmito, "[", i=1, j=) %>%
+    do.call(rbind, .) %>%
+    {sign(.[,1]) == sign(.[,2])}
+  
+  # Other term
+  power_ergmito_term2 <- lapply(power_ergmito, "[", i=2, j=) %>%
+    do.call(rbind, .) %>%
+    {sign(.[,1]) == sign(.[,2])}
+  
+  
+  # Plot -------------------------------------
+  dat <- data.frame(
+    Power = c(
+      power_ergmito_edges, power_ergmito_term2,
+      power_ergm_edges, power_ergm_term2
+      ),
+    Model = c(
+      rep("ergmito", nfitted*2), rep("ergm", nfitted*2)
+    ),
+    Term = rep(c(rep("edges", nfitted), rep(term_name[2], nfitted)), 2),
+    Size = sapply(lapply(dgp[fitted_common], "[[", "size") , sum),
+    Par  = c(
+      {lapply(dgp[fitted_common], "[[", "par") %>%
+        sapply("[", 1)},
+      {lapply(dgp[fitted_common], "[[", "par") %>%
+        sapply("[", 2)}
+    )
+      
+  ) %>% data.table()
+  
+  
+  
+  dat[, EffectSize := interval_tags(abs(Par), intervals_effect)]
+  
+  dat <- dat[, mean(Power), by = .(Model, Term, Size, EffectSize)]
+  setnames(dat, "V1", "Power")
+  
+  p <- ggplot(dat, aes(y = Power, fill=Model)) +
+    geom_col(aes(x = Size, group=Model), position="dodge", color="black") +
+    theme_bw() +
+    scale_fill_manual(values = fillcols) +
+    facet_grid(EffectSize ~ Term) 
+  print(p)
+  p +
+    ggsave(
+      sprintf("simulations/power-%s.pdf", e),
+      width = 8*.8, height = 6*.8
+    )
+  
+  
 }
 
 
