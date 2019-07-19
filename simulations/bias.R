@@ -1,4 +1,5 @@
 library(ggplot2)
+library(ggforce)
 library(ggridges)
 library(magrittr)
 library(data.table)
@@ -6,7 +7,7 @@ library(data.table)
 source("simulations/interval_tags.R")
 
 experiments <- c(
-  "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual",
+  # "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual",
   "Distribution of Empirical Bias (ttriad)" = "02-various-sizes-4-5-ttriad"
 )
 
@@ -28,7 +29,7 @@ for (i in seq_along(experiments)) {
   sizes <- sapply(sizes, sum)
   sizes <- sort(unique(unlist(sizes)))
   
-  sizes_labs <- structure(paste(sizes, "nets."), names = sizes)
+  sizes_labs <- structure(paste(sizes, "nets"), names = sizes)
   
   # Found by ERGM
   fitted_ergm <- lapply(lapply(res, "[[", "ergm"), "[[", "coef")
@@ -67,7 +68,7 @@ for (i in seq_along(experiments)) {
     theme_light() +
     scale_fill_manual(values = fillcols) +
     geom_density_ridges2(aes(fill=model)) +
-    xlim(c(-4, 4)) +
+    xlim(c(-2, 2)) +
     facet_grid(
       term ~ size,
       labeller = labeller(
@@ -80,7 +81,8 @@ for (i in seq_along(experiments)) {
     ylab(NULL) +
     theme(
       axis.ticks.x  = element_blank(),
-      axis.text.x  = element_blank()
+      axis.text.x  = element_blank(),
+      text = element_text(family = "AvantGarde")
       ) 
   print(p)
   p +
@@ -96,9 +98,14 @@ for (i in seq_along(experiments)) {
     size = rep(sapply(lapply(dgp[fitted_common], "[[", "size"), sum), 2)
   ) 
   
-  ggplot(dat, aes(y=Diff)) +
+  p <- ggplot(dat, aes(y=Diff)) +
     geom_violin(aes(x=Term)) +
-    ggsave(sprintf("simulations/bias-relative-%s.pdf", e),
+    facet_zoom(y = Diff > -3 & Diff < 3) +
+    theme(text = element_text(family = "AvantGarde"))
+  
+  print(p)
+  
+  p + ggsave(sprintf("simulations/bias-absdiff-%s.pdf", e),
            width = 8*.8, height = 6*.8)
     
   # Time -----------------------------------------------------------------------
@@ -131,7 +138,9 @@ for (i in seq_along(experiments)) {
     theme_bw() +
     scale_fill_manual(values = fillcols) +
     theme(axis.text.y = element_blank()) +
-    xlab("Elapsed time in seconds") + ylab(NULL)
+    xlab("Elapsed time in seconds") + ylab(NULL) +
+    coord_cartesian(xlim = c(0, 25)) +
+    theme(text = element_text(family = "AvantGarde"))
   
   print(p)
   

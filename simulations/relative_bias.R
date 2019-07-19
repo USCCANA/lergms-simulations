@@ -1,9 +1,11 @@
 library(magrittr)
 library(ggplot2)
+library(ggforce)
+library(data.table)
 
 experiments <- c(
-  "Distribution of Empirical Bias: ttriad" = "02-various-sizes-4-5-ttriad",
-  "Distribution of Empirical Bias: mutual" = "02-various-sizes-4-5-mutual"
+  "Distribution of Empirical Bias: ttriad" = "02-various-sizes-4-5-ttriad" # ,
+  # "Distribution of Empirical Bias: mutual" = "02-various-sizes-4-5-mutual"
 )
 
 for (i in seq_along(experiments)) {
@@ -56,17 +58,24 @@ for (i in seq_along(experiments)) {
   barplot(quantile(bias_term2, S, na.rm = TRUE));abline(a=1, b=0)
   
   
-  
-  data.frame(
+  dat <- data.frame(
     BiasDif = c(bias_edges, bias_term2),
     Term    = c(
       rep("edges", length(bias_edges)),
       rep(gsub(".+[:]\\s+", "", names(e)), length(bias_term2))
       )
-  ) %>% tibble::as_tibble() %>%
-    ggplot(aes(y = BiasDif, x = Term)) +
+  ) %>% data.table()
+  
+  p <- ggplot(dat, aes(y = BiasDif, x = Term)) +
     geom_violin() +
-    scale_y_log10() %>%
-    print()
+    ylab("|ergm Bias|/|ergmito Bias|") +
+    theme(text = element_text(family = "AvantGarde")) +
+    facet_zoom(y = BiasDif < 10) +
+    geom_abline(intercept = 1, slope=0, lty=2) 
+  
+  p + ggsave(sprintf("simulations/bias-relative-%s.pdf", e),
+            width = 8*.8, height = 6*.8)
+  
+  print(p)
   
 }

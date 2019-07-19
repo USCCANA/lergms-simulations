@@ -7,7 +7,7 @@ intervals_effect <- c(.1, .5, 1, 2)
 
 
 experiments <- c(
-  "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual",
+  # "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual",
   "Distribution of Empirical Bias (ttriad)" = "02-various-sizes-4-5-ttriad"
 )
 
@@ -110,8 +110,10 @@ for (i in seq_along(experiments)) {
   p <- ggplot(dat, aes(y = Power, fill=Model)) +
     geom_col(aes(x = Size, group=Model), position="dodge", color="black") +
     theme_bw() +
+    theme(text = element_text(family = "AvantGarde")) +
     scale_fill_manual(values = fillcols) +
-    facet_grid(EffectSize ~ Term) 
+    facet_grid(EffectSize ~ Term) +
+    ylab("Sample size") + xlab("Empirical power")
   print(p)
   p +
     ggsave(
