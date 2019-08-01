@@ -107,13 +107,17 @@ for (i in seq_along(experiments)) {
   dat <- dat[, mean(Power), by = .(Model, Term, Size, EffectSize)]
   setnames(dat, "V1", "Power")
   
+  # Making the sample size categorigal
+  lvls <- sort(unique(dat$Size))
+  dat[, Size := factor(Size, levels = lvls, labels = lvls)]
+  
   p <- ggplot(dat, aes(y = Power, fill=Model)) +
     geom_col(aes(x = Size, group=Model), position="dodge", color="black") +
     theme_bw() +
     theme(text = element_text(family = "AvantGarde")) +
     scale_fill_manual(values = fillcols) +
     facet_grid(EffectSize ~ Term) +
-    ylab("Sample size") + xlab("Empirical power")
+    xlab("Sample size") + ylab("Empirical power")
   print(p)
   p +
     ggsave(

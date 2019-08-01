@@ -98,15 +98,25 @@ for (i in seq_along(experiments)) {
     size = rep(sapply(lapply(dgp[fitted_common], "[[", "size"), sum), 2)
   ) 
   
+  dat_test <- dat %>%
+    data.table() %>%
+    .[, t.test(Diff)[c("estimate", "p.value")], by=Term]
+  
   p <- ggplot(dat, aes(y=Diff)) +
-    geom_violin(aes(x=Term)) +
+    geom_jitter(aes(x=Term), color = adjustcolor("black", alpha.f = .5)) +
     facet_zoom(y = Diff > -3 & Diff < 3) +
+    ylab("|ergm bias| - |ergmito bias|") +
+    xlab("Term") +
     theme(text = element_text(family = "AvantGarde"))
   
   print(p)
   
   p + ggsave(sprintf("simulations/bias-absdiff-%s.pdf", e),
            width = 8*.8, height = 6*.8)
+  
+  
+  
+  
     
   # Time -----------------------------------------------------------------------
   
@@ -139,7 +149,7 @@ for (i in seq_along(experiments)) {
     scale_fill_manual(values = fillcols) +
     theme(axis.text.y = element_blank()) +
     xlab("Elapsed time in seconds") + ylab(NULL) +
-    coord_cartesian(xlim = c(0, 25)) +
+    coord_cartesian(xlim = c(0, 75)) +
     theme(text = element_text(family = "AvantGarde"))
   
   print(p)
