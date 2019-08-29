@@ -15,7 +15,7 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 2e3
+nsim   <- 2e4
 
 # Simulating -------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ U <- c(rev(-U), U)
 params_3_5 <- lapply(1:nsim, function(i) sample(U, 2, TRUE))
 
 
-sizes <- c(10, 20, 30, 40, 50)
+sizes <- c(5, 10, 30, 50, 100, 150, 200, 300)
 nsizes <- length(sizes)
 S <- vector("list", nsizes)
 for (i in seq_along(S)) {
@@ -61,10 +61,8 @@ dgp_4_5_mutual <- Slurm_Map(
    job_name = "ergmito-dgp-mutual"
 )
 
-dgp_4_5_mutual <- Slurm_collect(dgp_4_5_mutual)
+Sys.sleep(30)
 
-# Transitive triads model
-saveRDS(dgp_4_5_mutual, "simulations/dgp_4_5_mutual.rds")
 
 dgp_4_5_ttriad <- Slurm_Map(
    function(p, s) {
@@ -79,8 +77,13 @@ dgp_4_5_ttriad <- Slurm_Map(
    job_name = "ergmito-dgp-ttriad"
 )
 
+
+Sys.sleep(30)
+
+
+# Transitive triads model
 dgp_4_5_ttriad <- Slurm_collect(dgp_4_5_ttriad)
-
-
+dgp_4_5_mutual <- Slurm_collect(dgp_4_5_mutual)
+saveRDS(dgp_4_5_mutual, "simulations/dgp_4_5_mutual.rds")
 saveRDS(dgp_4_5_ttriad, "simulations/dgp_4_5_ttriad.rds")
 
