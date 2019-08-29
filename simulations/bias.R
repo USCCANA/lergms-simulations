@@ -1,86 +1,49 @@
 library(ggplot2)
+library(ggforce)
+library(ggridges)
+library(magrittr)
+library(data.table)
 
 source("simulations/interval_tags.R")
 
 experiments <- c(
+  # "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual",
   "Distribution of Empirical Bias (ttriad)" = "02-various-sizes-4-5-ttriad"
-  # "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual"
 )
+
+# Colors to be used to fill the plots
+fillcols <- c(ergm = "gray", ergmito="black")
+fillcols[] <- adjustcolor(fillcols, alpha.f = .7) 
 
 for (i in seq_along(experiments)) {
   
-  e <- experiments[i]
+  e         <- experiments[i]
+  term_name <- c("edges", gsub(".+[-](?=[a-zA-Z]+$)", "", e, perl = TRUE))
   
   # Reading data
-  res <- readRDS(sprintf("simulations/%s.rds", e))
-  dgp <- readRDS(sprintf("simulations/%s-dat.rds", e))
+  res  <- readRDS(sprintf("simulations/%s.rds", e))
+  dgp  <- readRDS(sprintf("simulations/%s-dat.rds", e))
+  pars <- lapply(dgp, "[[", "par")
   
-  for (m in c("ergm", "ergmito")) {
+  sizes <- lapply(dgp, "[[", "size")
+  sizes <- sapply(sizes, sum)
+  sizes <- sort(unique(unlist(sizes)))
   
-    nsim <- length(res) 
-    
-    # Computing bias
-    bias <- lapply(lapply(res, "[[", m), "[[", "coef")
-    
-    idx_fitted <- which(!sapply(bias, is.null))
-    
-    pars <- lapply(dgp, "[[", "par")
-    bias <- do.call(rbind, bias[idx_fitted]) - do.call(rbind, pars[idx_fitted])
-    rownames(bias) <- idx_fitted
-
-    counts <- sapply(lapply(dgp[idx_fitted], "[[", "size"), sum)
-    
-    bias <- data.frame(
-      bias = c(bias[,1], bias[,2]),
-      par  = c(rep("edges", nrow(bias)), rep("mutual", nrow(bias))),
-      n    = c(counts, counts)
-    )
-    
-    # # Building intervals
-    # bias$n3_tags <- interval_tags(
-    #   bias$n3, quantile(bias$n3, c(0, .25, .5, .75, 1))
-    #   )
-  
-    g <- ggplot(bias, aes(x = n, y = bias)) +
-      geom_violin(aes(group = n)) +
-      ylim(-10, 10) +
-      facet_grid(cols = vars(par))  +
-      labs(
-        title    = paste(names(experiments)[i], "fitted using", m),
-        subtitle = sprintf(
-          "# of observations %d (%d discarded due to Inf)", nrow(bias)/2,
-          nsim - nrow(bias)/2
-          )
-      ) +
-      xlab("Sample size") + ylab("Empirical Bias") +
-      geom_abline(intercept = -1, slope = 0, lty=2) +
-      geom_abline(intercept = 1, slope = 0, lty=2) +
-      annotate("text", x = .45, y = 2, label = "1") +
-      annotate("text", x = .45, y = -2, label = "-1") +
-      theme_light() +
-      theme(text = element_text(family = "AvantGarde"))
-    
-    print(g)
-
-    ggsave(
-      filename = sprintf("simulations/bias-%s-%s.pdf", e, m),
-      plot = g, width = 8*.8, height = 6*.8
-      )
-
-  }
-  
-  # Side by side coverage ------------------------------------------------------
-  
-  # Looking at a common set of observations
+  sizes_labs <- structure(paste(sizes, "nets"), names = sizes)
   
   # Found by ERGM
   fitted_ergm <- lapply(lapply(res, "[[", "ergm"), "[[", "coef")
-  fitted_ergm <- which(!sapply(fitted_ergm, is.null))
+  fitted_ergm <- which(
+    !sapply(fitted_ergm, is.null) & !sapply(fitted_ergm, function(i) any(is.infinite(i)))
+    )
   
   fitted_ergmito <- lapply(lapply(res, "[[", "ergmito"), "[[", "coef")
-  fitted_ergmito <- which(!sapply(fitted_ergmito, is.null))
+  fitted_ergmito <- which(
+    !sapply(fitted_ergmito, is.null) & !sapply(fitted_ergmito, function(i) any(is.infinite(i)))
+  )
   
   fitted_common <- intersect(fitted_ergm, fitted_ergmito)
+  nfitted <- length(fitted_common)
   
   pars <- lapply(dgp, "[[", "par")
 
@@ -90,26 +53,118 @@ for (i in seq_along(experiments)) {
   bias_ergmito <- lapply(lapply(res, "[[", "ergmito"), "[[", "coef")[fitted_common]
   bias_ergmito <- do.call(rbind, bias_ergmito) - do.call(rbind, pars[fitted_common])
 
-  nfitted <- length(fitted_common)
   
+  # Side by side bias
   dat <- data.frame(
     abs_bias = c(bias_ergm[,1], bias_ergmito[,1], bias_ergm[,2], bias_ergmito[,2]),
-    term     = c(rep("edges", nfitted*2), rep("ttriad", nfitted*2)),
-    model    = rep(c(rep("ergm", nfitted), rep("ergmito", nfitted)), 2)
+    term     = c(rep(term_name[1], nfitted*2), rep(term_name[2], nfitted*2)),
+    model    = rep(c(rep("ergm", nfitted), rep("ergmito", nfitted)), 2),
+    size     = sapply(lapply(dgp[fitted_common], "[[", "size"), sum),
+    stringsAsFactors = FALSE
   )
   
-  ggplot(dat, aes(y=abs_bias, x=term)) + 
-    geom_violin(aes(group=term)) + facet_grid(rows = vars(model))
+  p <- dat %>% 
+  ggplot(aes(abs_bias, y=model)) + 
+    theme_light() +
+    scale_fill_manual(values = fillcols) +
+    geom_density_ridges2(aes(fill=model)) +
+    xlim(c(-2, 2)) +
+    facet_grid(
+      term ~ size,
+      labeller = labeller(
+        size = sizes_labs
+        )) +
+    coord_flip() +
+    geom_vline(xintercept=0, lty=2) +
+    xlab("Empirical Bias") +
+    labs(fill = "Model") +
+    ylab(NULL) +
+    theme(
+      axis.ticks.x  = element_blank(),
+      axis.text.x  = element_blank(),
+      text = element_text(family = "AvantGarde")
+      ) 
+  print(p)
+  p +
+    ggsave(
+      sprintf("simulations/bias-%s.pdf", e),
+      width = 8*.8, height = 6*.8
+      )
   
-  dat2 <- data.frame(
-    abs_bias = c(
-      abs(bias_ergm[,1])- abs(bias_ergmito[,1]), abs(bias_ergm[,2]) - abs(bias_ergmito[,2])),
-    term     = c(rep("edges", nfitted), rep("ttriad", nfitted)),
-    model    = c(rep("ergm", nfitted), rep("ergmito", nfitted))
-  )
-
+  # Absolute bias size
+  dat <- data.frame(
+    Diff = c(abs(bias_ergm[,1]) - abs(bias_ergmito[,1]), abs(bias_ergm[,2]) - abs(bias_ergmito[,2])),
+    Term = c(rep("edges", nfitted), rep(term_name[2], nfitted)),
+    size = rep(sapply(lapply(dgp[fitted_common], "[[", "size"), sum), 2)
+  ) 
+  
+  dat_test <- dat %>%
+    data.table() %>%
+    .[, t.test(Diff)[c("estimate", "p.value")], by=Term]
+  
+  p <- ggplot(dat, aes(y=Diff)) +
+    geom_jitter(aes(x=Term), color = adjustcolor("black", alpha.f = .5)) +
+    facet_zoom(y = Diff > -3 & Diff < 3) +
+    ylab("|ergm bias| - |ergmito bias|") +
+    xlab("Term") +
+    theme(text = element_text(family = "AvantGarde"))
+  
+  print(p)
+  
+  p + ggsave(sprintf("simulations/bias-absdiff-%s.pdf", e),
+           width = 8*.8, height = 6*.8)
+  
+  
+  
+  
+    
+  # Time -----------------------------------------------------------------------
+  
+  times_ergm <- lapply(res[fitted_common], "[[", "ergm") %>%
+    lapply("[[", "time") %>%
+    do.call(rbind, .) %>%
+    data.table() %>%
+    .[, Model := "ergm"]
+    
+  times_ergmito <- lapply(res[fitted_common], "[[", "ergmito") %>%
+    lapply("[[", "time") %>%
+    do.call(rbind, .) %>%
+    data.table() %>%
+    .[, Model := "ergmito"]
+  
+  times_ergm[, Size        := sapply(lapply(dgp[fitted_common], "[[", "size"), sum)]
+  times_ergm[, Relative    := elapsed/times_ergmito$elapsed]
+  times_ergmito[, Size     := sapply(lapply(dgp[fitted_common], "[[", "size"), sum)]
+  times_ergmito[, Relative := 1.0]
+  
+  p <- rbindlist(list(times_ergm, times_ergmito)) %>%
+    ggplot(aes(x = elapsed, y = Size, fill = Model)) +
+    geom_density_ridges(aes(y = Model)) +
+    facet_wrap(
+      ~ Size, 
+      labeller = labeller(
+        Size = sizes_labs
+      )) +
+    theme_bw() +
+    scale_fill_manual(values = fillcols) +
+    theme(axis.text.y = element_blank()) +
+    xlab("Elapsed time in seconds") + ylab(NULL) +
+    coord_cartesian(xlim = c(0, 75)) +
+    theme(text = element_text(family = "AvantGarde"))
+  
+  print(p)
+  
+  p +
+    ggsave(sprintf("simulations/bias-elapsed-%s.pdf", e),
+           width = 8*.8, height = 6*.8)
+  
+  # ggplot(times_ergm, aes(y = Relative, x = "")) +
+  #   geom_violin() + scale_y_log10()
+  # 
+  
+  
   # ERGM is usually biased  
-  ggplot(dat2, aes(y=abs_bias, x=term)) + 
-    geom_violin(aes(group=term)) + scale_y_log10()
+  # ggplot(dat2, aes(y=abs_bias, x=term)) + 
+  #   geom_violin(aes(group=term)) #+ scale_y_log10()
 }
 
