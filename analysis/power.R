@@ -5,7 +5,6 @@ library(data.table)
 source("simulations/interval_tags.R")
 intervals_effect <- c(.1, .5, 1, 2)
 
-
 experiments <- c(
   # "Distribution of Empirical Bias (mutual)" = "02-various-sizes-4-5-mutual",
   "Distribution of Empirical Bias (ttriad)" = "02-various-sizes-4-5-ttriad"
@@ -47,43 +46,53 @@ fitted_ergmito <- which(
 fitted_common <- intersect(fitted_ergm, fitted_ergmito)
 nfitted <- length(fitted_common)
 
+# Signs of the dgp
+signs <- lapply(dgp[fitted_common], "[[", "par") %>%
+  do.call(rbind, .)
+signs[] <- sign(signs)
+
+#' @param dat Should be a vector of the same length as the number of rows in
+#' `true_sign`. This has the confidence intervals for each parameters for each
+#' model.
+#' @param true_sign A matrix with the sign of the true parameters of each model.
+power_calc <- function(dat, true_sign) {
+  
+  ans <- matrix(nrow = length(dat), ncol = ncol(true_sign))
+  for (k in 1:ncol(ans)) {
+    
+    tmp <- do.call(rbind, lapply(dat, "[", i = k, j =))
+    tmp[] <- sign(tmp)
+    
+    # All has the same sign
+    ans[,k] <- (tmp[,1] == tmp[,2]) & (tmp[,1] == true_sign[, k])
+    
+  }
+  
+  colnames(ans) <- rownames(dat[[1]])
+  ans
+  
+}
+
 # Ergm ---------------------------------------
-power_ergm <- res[fitted_common] %>%
+
+power_mcmle <- res[fitted_common] %>%
   lapply("[[", "ergm") %>%
   lapply("[[", "ci")
 
-# Edges
-power_ergm_edges <- lapply(power_ergm, "[", i=1, j=) %>%
-  do.call(rbind, .) %>%
-  {sign(.[,1]) == sign(.[,2])}
+power_mcmle <- power_calc(power_mcmle, signs)
 
-# Other term
-power_ergm_term2 <- lapply(power_ergm, "[", i=2, j=) %>%
-  do.call(rbind, .) %>%
-  {sign(.[,1]) == sign(.[,2])}
 
 # Ergmito ----------------------
-power_ergmito <- res[fitted_common] %>%
+power_mle <- res[fitted_common] %>%
   lapply("[[", "ergmito") %>%
   lapply("[[", "ci")
 
-# Edges
-power_ergmito_edges <- lapply(power_ergmito, "[", i=1, j=) %>%
-  do.call(rbind, .) %>%
-  {sign(.[,1]) == sign(.[,2])}
-
-# Other term
-power_ergmito_term2 <- lapply(power_ergmito, "[", i=2, j=) %>%
-  do.call(rbind, .) %>%
-  {sign(.[,1]) == sign(.[,2])}
+power_mle <- power_calc(power_mle, signs)
 
 
 # Plot -------------------------------------
 dat <- data.frame(
-  Power = c(
-    power_ergmito_edges, power_ergmito_term2,
-    power_ergm_edges, power_ergm_term2
-    ),
+  Power = c(as.vector(power_mle), as.vector(power_mcmle)),
   Model = c(
     rep("ergmito", nfitted*2), rep("ergm", nfitted*2)
   ),
@@ -118,11 +127,15 @@ p <- ggplot(dat_tmp, aes(y = Power, fill=Model)) +
   facet_grid(EffectSize ~ Term) +
   xlab("Sample size") + ylab("Empirical power")
 print(p)
-p +
+p #+
   ggsave(
     sprintf("analysis/power-by-model.pdf", e),
     width = 8*.8, height = 6*.8
   )
+  
+# Testing wether the difference is statistically significant.
+prop.test(colSums(cbind(power_mcmle[,1], power_mle[,1])), n = rep(nfitted, 2))
+prop.test(colSums(cbind(power_mcmle[,2], power_mle[,2])), n = rep(nfitted, 2))
 
 # Looking at power by (TERM x SIZE x Effect size) ------------------
 dat_tmp <- dat[, mean(Power), by = .(Model, Term, Size, Prop5)]
@@ -150,3 +163,23 @@ p +
     sprintf("analysis/power-by-prop-of-fives.pdf", e),
     width = 8*.8, height = 6*.8
   )
+
+
+# Analyzing cases in which MC-MLE did better than MLE --------------------------
+
+# MC-MLE identified both, MLE did not or vice versa
+both_mcmle <- which(
+  (power_mcmle[,1] & power_mcmle[,2]) &
+    (!power_mle[,1] & !power_mle[,2])
+  )
+
+both_mcmle
+
+res[fitted_common][both_mcmle]
+
+both_mle <- which(
+  (!power_mcmle[,1] & !power_mcmle[,2]) &
+    (power_mle[,1] & power_mle[,2])
+)
+
+both_mle

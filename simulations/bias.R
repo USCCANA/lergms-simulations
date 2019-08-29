@@ -37,7 +37,7 @@ for (i in seq_along(experiments)) {
     !sapply(fitted_ergm, is.null) & !sapply(fitted_ergm, function(i) any(is.infinite(i)))
     )
   
-  fitted_ergmito <- lapply(lapply(res, "[[", "ergmito"), "[[", "coef")
+  fitted_ergmito <- lapply(lapply(res, "[[", "ergmito"), "[[", "status")
   fitted_ergmito <- which(
     !sapply(fitted_ergmito, is.null) & !sapply(fitted_ergmito, function(i) any(is.infinite(i)))
   )
