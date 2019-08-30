@@ -1,6 +1,7 @@
 library(ggplot2)
 library(magrittr)
 library(data.table)
+library(ergmito)
 
 source("simulations/interval_tags.R")
 intervals_effect <- c(.1, .5, 1, 2)
@@ -47,22 +48,21 @@ nfitted <- length(fitted_common)
 # Signs of the dgp
 signs <- lapply(dgp[fitted_common], "[[", "par") %>%
   do.call(rbind, .)
-signs[] <- sign(signs)
 
 #' @param dat Should be a vector of the same length as the number of rows in
 #' `true_sign`. This has the confidence intervals for each parameters for each
 #' model.
 #' @param true_sign A matrix with the sign of the true parameters of each model.
-power_calc <- function(dat, true_sign) {
+coverage_calc <- function(dat, true) {
   
-  ans <- matrix(nrow = length(dat), ncol = ncol(true_sign))
+  ans <- matrix(nrow = length(dat), ncol = ncol(true))
   for (k in 1:ncol(ans)) {
     
     tmp <- do.call(rbind, lapply(dat, "[", i = k, j =))
-    tmp[] <- sign(tmp)
-    
+
     # All has the same sign
-    ans[,k] <- (tmp[,1] == tmp[,2]) & (tmp[,1] == true_sign[, k])
+    ans[,k] <- (tmp[,1] <= true[, k]) & (tmp[,2] >= true[, k]) &
+      (sign(tmp[,2]) == sign(tmp[,1]))
     
   }
   
@@ -77,7 +77,7 @@ power_mcmle <- res[fitted_common] %>%
   lapply("[[", "ergm") %>%
   lapply("[[", "ci")
 
-power_mcmle <- power_calc(power_mcmle, signs)
+power_mcmle <- coverage_calc(power_mcmle, signs)
 
 
 # Ergmito ----------------------
@@ -85,12 +85,12 @@ power_mle <- res[fitted_common] %>%
   lapply("[[", "ergmito") %>%
   lapply("[[", "ci")
 
-power_mle <- power_calc(power_mle, signs)
+power_mle <- coverage_calc(power_mle, signs)
 
 
 # Plot -------------------------------------
 dat <- data.frame(
-  Power = c(as.vector(power_mle), as.vector(power_mcmle)),
+  Coverage = c(as.vector(power_mle), as.vector(power_mcmle)),
   Model = c(
     rep("ergmito", nfitted*2), rep("ergm", nfitted*2)
   ),
@@ -116,76 +116,70 @@ dat[, Prop5 := interval_tags(Prop5, c(0, .2, .4, .6, .8, 1))]
 dat[, AvgDensity := interval_tags(AvgDensity, c(0, .1, .2, .4, .6, .8, .9, 1))]
 
 # Looking at power by (TERM x SIZE x Effect size) ------------------
-dat_tmp <- dat[, mean(Power), by = .(Model, Term, Size, EffectSize)]
-setnames(dat_tmp, "V1", "Power")
+dat_tmp <- dat[
+  , list(
+    Coverage = mean(Coverage, na.rm = TRUE),
+    N_TRUE   = sum(Coverage, na.rm = TRUE),
+    N        = .N
+  ), by = .(Model, Term, Size, EffectSize)]
 
 # Making the sample size categorigal
 lvls <- sort(unique(dat_tmp$Size))
 dat_tmp[, Size := factor(Size, levels = lvls, labels = lvls)]
 
-p <- ggplot(dat_tmp, aes(y = Power, fill=Model)) +
+p <- ggplot(dat_tmp, aes(y = Coverage, fill=Model)) +
   geom_col(aes(x = Size, group=Model), position="dodge", color="black") +
   theme_bw() +
   theme(text = element_text(family = "AvantGarde")) +
   scale_fill_manual(values = fillcols) +
   facet_grid(EffectSize ~ Term) +
-  xlab("Sample size") + ylab("Empirical power")
+  xlab("Sample size") + ylab("Coverage Probability") + 
+  coord_cartesian(ylim = c(0,1))
+
 
 print(p)
 
 ggsave(
-    sprintf("analysis/power-by-model.pdf", e),
+    sprintf("analysis/coverage-by-model.pdf", e),
     width = 8*.8, height = 6*.8
   )
   
-# Testing wether the difference is statistically significant.
-prop.test(colSums(cbind(power_mcmle[,1], power_mle[,1]), na.rm=TRUE), n = rep(nfitted, 2))
-prop.test(colSums(cbind(power_mcmle[,2], power_mle[,2]), na.rm=TRUE), n = rep(nfitted, 2))
+# Testing wether the difference is statistically significant. ------------------
 
-# Power by average density -----------------------------------------------------
-dat_tmp <- dat[, mean(Power), by = .(Model, Term, AvgDensity, EffectSize)]
-setnames(dat_tmp, "V1", "Power")
+# Aggregating the data
+test <- dat_tmp[
+  ,
+  list(Coverage = sum(N_TRUE), N = sum(N)),
+  by = c("Model", "Term", "Size", "EffectSize")
+  ]
 
-# Making the sample size categorigal
-lvls <- sort(unique(dat_tmp$AvgDensity))
-dat_tmp[, AvgDensity := factor(AvgDensity, levels = lvls, labels = lvls)]
-
-ggplot(dat_tmp, aes(y = Power, fill=Model)) +
-  geom_col(aes(x = AvgDensity, group=Model), position="dodge", color="black") +
-  theme_bw() +
-  theme(text = element_text(family = "AvantGarde")) +
-  scale_fill_manual(values = fillcols) +
-  facet_grid(EffectSize ~ Term) +
-  xlab("Average Density") + ylab("Empirical power")
-
-
-# Looking at power by (TERM x SIZE x Effect size) ------------------------------
-dat_tmp <- dat[, mean(Power), by = .(Model, Term, Size, Prop5)]
-setnames(dat_tmp, "V1", "Power")
-
-# Making the sample size categorigal
-lvls <- c(5, 30, 50, 100, 300)
-dat_tmp[, Size := interval_tags(Size, lvls)]
-
-p <- ggplot(dat_tmp[Model == "ergmito"], aes(y = Power, fill = Prop5)) +
-  geom_col(aes(x = Prop5), position="dodge") +
-  theme_bw() +
-  theme(text = element_text(family = "AvantGarde")) +
-  scale_fill_viridis_d() +
-  facet_grid(Size ~ Term) +
-  xlab("") + ylab("Empirical power") +
-  labs(fill = "Prop. of nets.\nof size 5") +
-  theme(
-    axis.ticks.x = element_blank(),
-    axis.text.x = element_blank()
-    )
-
-p +
-  ggsave(
-    sprintf("analysis/power-by-prop-of-fives.pdf", e),
-    width = 8*.8, height = 6*.8
+# Preparing the results
+Sizes <- sort(unique(test$Size))
+Esizes <- sort(unique(test$EffectSize))
+differences <- array(
+  dim = c(length(Sizes), 2, length(Esizes)), 
+  dimnames = list(Sizes, c("edges", "ttriad"), Esizes)
   )
 
+for (e in Esizes) {
+  for (term in c("edges", "ttriad")) {
+    for (s in Sizes) {
+      
+      # Making the test
+      tmp_test <- with(
+        test[Term == term & Size == s & EffectSize == e],
+        prop.test(Coverage, n = N)
+        )
+      
+      # Saving the differences
+      differences[s, term, e] <- tmp_test$p.value
+      
+    }
+  }
+}
+
+# This returns an error iff differences are significant!
+stopifnot(all(differences > .1))
 
 # Analyzing cases in which MC-MLE did better than MLE --------------------------
 
@@ -199,10 +193,10 @@ both_mcmle # three cases in which MCMLE discovered something on both, but MLE di
 # not
 
 lapply(res[fitted_common][both_mcmle], "[[", "ergmito") %>%
-  lapply("[[", "coef") %>% do.call(rbind, .)
+  lapply("[[", "ci") # %>% do.call(rbind, .)
 
 lapply(res[fitted_common][both_mcmle], "[[", "ergm") %>%
-  lapply("[[", "coef") %>% do.call(rbind, .)
+  lapply("[[", "ci") # %>% do.call(rbind, .)
 
 library(ergmito)
 

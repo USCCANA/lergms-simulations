@@ -32,17 +32,19 @@ for (i in seq_along(experiments)) {
   sizes_labs <- structure(paste(sizes, "nets"), names = sizes)
   
   # Found by ERGM
-  fitted_ergm <- lapply(lapply(res, "[[", "ergm"), "[[", "coef")
-  fitted_ergm <- which(
-    !sapply(fitted_ergm, is.null) & !sapply(fitted_ergm, function(i) any(is.infinite(i)))
-    )
+  fitted_mcmle <- sapply(res, function(r) {
+    if (inherits(r$ergm, "error"))
+      return(FALSE)
+    !r$ergm$degeneracy
+  }) %>% which
   
-  fitted_ergmito <- lapply(lapply(res, "[[", "ergmito"), "[[", "status")
-  fitted_ergmito <- which(
-    !sapply(fitted_ergmito, is.null) & !sapply(fitted_ergmito, function(i) any(is.infinite(i)))
-  )
+  fitted_mle <- sapply(res, function(r) {
+    if (inherits(r$ergmito, "error"))
+      return(FALSE)
+    r$ergmito$status == 0L
+  }) %>% which
   
-  fitted_common <- intersect(fitted_ergm, fitted_ergmito)
+  fitted_common <- intersect(fitted_mcmle, fitted_mle)
   nfitted <- length(fitted_common)
   
   pars <- lapply(dgp, "[[", "par")
