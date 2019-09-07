@@ -1,5 +1,6 @@
 library(ggplot2)
 library(magrittr)
+library(ergmito)
 library(data.table)
 
 source("simulations/interval_tags.R")
@@ -116,8 +117,16 @@ dat[, Prop5 := interval_tags(Prop5, c(0, .2, .4, .6, .8, 1))]
 dat[, AvgDensity := interval_tags(AvgDensity, c(0, .1, .2, .4, .6, .8, .9, 1))]
 
 # Looking at power by (TERM x SIZE x Effect size) ------------------
-dat_tmp <- dat[, mean(Power), by = .(Model, Term, Size, EffectSize)]
-setnames(dat_tmp, "V1", "Power")
+dat_tmp <- dat[
+  ,
+  list(
+    Power    = mean(Power, na.rm = TRUE),
+    N_TRUE   = sum(Power, na.rm = TRUE),
+    N        = .N
+  ),
+  by = .(Model, Term, Size, EffectSize)
+  ]
+# setnames(dat_tmp, "V1", "Power")
 
 # Making the sample size categorigal
 lvls <- sort(unique(dat_tmp$Size))
@@ -138,13 +147,54 @@ ggsave(
     width = 8*.8, height = 6*.8
   )
   
-# Testing wether the difference is statistically significant.
-prop.test(colSums(cbind(power_mcmle[,1], power_mle[,1]), na.rm=TRUE), n = rep(nfitted, 2))
-prop.test(colSums(cbind(power_mcmle[,2], power_mle[,2]), na.rm=TRUE), n = rep(nfitted, 2))
+# Testing wether the difference is statistically significant. ------------------
+
+# Aggregating the data
+test <- dat_tmp[
+  ,
+  list(Power = sum(N_TRUE), N = sum(N)),
+  by = c("Model", "Term", "Size", "EffectSize")
+  ]
+
+# Preparing the results
+Sizes <- sort(unique(test$Size))
+Esizes <- sort(unique(test$EffectSize))
+differences <- array(
+  dim = c(length(Sizes), 2, length(Esizes)), 
+  dimnames = list(Sizes, c("edges", "ttriad"), Esizes)
+)
+
+for (e in Esizes) {
+  for (term in c("edges", "ttriad")) {
+    for (s in Sizes) {
+      
+      # Making the test
+      tmp_test <- with(
+        test[Term == term & Size == s & EffectSize == e],
+        prop.test(Power, n = N)
+      )
+      
+      # Saving the differences
+      differences[s, term, e] <- tmp_test$p.value
+      
+    }
+  }
+}
+
+# This returns an error iff differences are significant!
+stopifnot(all(differences > .1))
+
+
+
 
 # Power by average density -----------------------------------------------------
-dat_tmp <- dat[, mean(Power), by = .(Model, Term, AvgDensity, EffectSize)]
-setnames(dat_tmp, "V1", "Power")
+dat_tmp <- dat[
+  , 
+  list(
+    Power = mean(Power, na.rm=TRUE)
+    ),
+  by = .(Model, Term, AvgDensity, EffectSize)
+  ]
 
 # Making the sample size categorigal
 lvls <- sort(unique(dat_tmp$AvgDensity))
@@ -160,8 +210,7 @@ ggplot(dat_tmp, aes(y = Power, fill=Model)) +
 
 
 # Looking at power by (TERM x SIZE x Effect size) ------------------------------
-dat_tmp <- dat[, mean(Power), by = .(Model, Term, Size, Prop5)]
-setnames(dat_tmp, "V1", "Power")
+dat_tmp <- dat[, list(Power = mean(Power, na.rm=TRUE)), by = .(Model, Term, Size, Prop5)]
 
 # Making the sample size categorigal
 lvls <- c(5, 30, 50, 100, 300)
