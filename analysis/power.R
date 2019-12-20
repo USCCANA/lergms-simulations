@@ -20,6 +20,7 @@ term_name <- c("edges", gsub(".+[-](?=[a-zA-Z]+$)", "", e, perl = TRUE))
 
 # Reading data
 res  <- readRDS(sprintf("simulations/%s.rds", e))
+res2 <- readRDS("simulations/02-various-sizes-4-5-ttriad-exact-hessian.rds")
 dgp  <- readRDS(sprintf("simulations/%s-dat.rds", e))
 pars <- lapply(dgp, "[[", "par")
 
@@ -41,6 +42,7 @@ fitted_mle <- sapply(res, function(r) {
     return(FALSE)
   r$ergmito$status == 0L
 }) %>% which
+
 
 fitted_common <- intersect(fitted_mcmle, fitted_mle)
 nfitted <- length(fitted_common)
@@ -86,12 +88,24 @@ power_mle <- res[fitted_common] %>%
   lapply("[[", "ergmito") %>%
   lapply("[[", "ci")
 
-power_mle <- power_calc(power_mle, signs)
+power_mle2 <- res2[fitted_common] %>%
+  lapply("[[", "ergmito") %>%
+  lapply("[[", "ci")
 
+# Comparing vcovs
+difference <- parallel::mcMap(function(x1, x2) sqrt(sum((x1 - x2)^2)), 
+                x1 = power_mle, x2 = power_mle2)
+difference <- unlist(difference)
+difference <- which(difference > 1)
+power_mle2[difference]
+power_mle[difference]
+
+power_mle <- power_calc(power_mle, signs)
+power_mle2 <- power_calc(power_mle2, signs)
 
 # Plot -------------------------------------
 dat <- data.frame(
-  Power = c(as.vector(power_mle), as.vector(power_mcmle)),
+  Power = c(as.vector(power_mle2), as.vector(power_mcmle)),
   Model = c(
     rep("ergmito", nfitted*2), rep("ergm", nfitted*2)
   ),

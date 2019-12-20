@@ -1,6 +1,7 @@
 library(ggplot2)
 library(magrittr)
 library(data.table)
+library(xtable)
 
 source("simulations/interval_tags.R")
 intervals_effect <- c(.1, .5, 1, 2)
@@ -37,8 +38,8 @@ covered <- Map(function(a,b) {
   if (any(!is.finite(a$ci)))
     return(FALSE)
   all(
-    # Condition 1: Is within the CI
-    (a$ci[, 1] < b) & (a$ci[, 2] > b) &
+    # Condition 1: Is in the same direction
+    (sign(a$ci[, 1]) == sign(b))  &
     # Condition 2: Is significant
       (sign(a$ci[,1])*sign(a$ci[,2]) > 0)
     )
@@ -58,7 +59,7 @@ covered <- Map(function(a,b) {
     return(FALSE)
   all(
     # Condition 1: Is within the CI
-    (a$ci[, 1] < b) & (a$ci[, 2] > b) &
+    (sign(a$ci[, 1]) == sign(b))  &
       # Condition 2: Is significant
       (sign(a$ci[,1])*sign(a$ci[,2]) > 0)
   )
@@ -76,6 +77,7 @@ tree <- matrix(c(
   1, 3,
   3, 4,
   3, 5,
+  1,10,
   4, 6,
   4, 7,
   5, 8,
@@ -88,43 +90,47 @@ tree$label <- c(
   "Yes",
   "MC-MLE",
   "MLE",
+  "Both",
   "Yes",
   "No",
   "Yes",
   "No"
 )
 
+COALESCE <- function(x) {
+  z <- if (is.null(x) | is.na(x)) 0 else x
+  formatC(z, big.mark = ",")
+}
+
 tree <- graph_from_data_frame(
   tree, vertices = data.frame(
-    idx  = 1:9,
+    idx  = 1:10,
     name = c(
       "Either failed",             # 1 All
-      overall["FALSE", "FALSE"],   # 2 All jointly OK
+      COALESCE(overall["FALSE", "FALSE"]),   # 2 All jointly OK
       "Which failed",              # 3 Not OK
       "MLE\nsignificant",          # 4 MC-MLE
       "MC-MLE\nsignificant",       # 5 MLE
-      ergmito_given_ergm_failed["TRUE"],
-      ergmito_given_ergm_failed["FALSE"],
-      ergm_given_ergmito_failed["TRUE"],
-      ergm_given_ergmito_failed["FALSE"]
+      COALESCE(ergmito_given_ergm_failed["TRUE"]),
+      COALESCE(ergmito_given_ergm_failed["FALSE"]),
+      COALESCE(ergm_given_ergmito_failed["TRUE"]),
+      COALESCE(ergm_given_ergmito_failed["FALSE"]),
+      COALESCE(sum(failed_ergm & failed_ergmito))
       )             
   ))
 
+library(ggraph)
+# library(ragg)
 graphics.off()
-pdf("analysis/failed-tree.pdf", width = 4, height = 4)
-op <- par(mai = rep(0, 4))
-plot(
-  tree, layout = layout_as_tree, vertex.color="transparent",
-  vertex.frame.color="transparent",
-  edge.arrow.size = 0,
-  vertex.size = 35,
-  vertex.label.color = "black",
-  vertex.label.family = "serif",
-  edge.label.color = "black",
-  edge.label.family = "serif"
-  )
-par(op)
-dev.off()
+# agg_(file, width = 1000, height = 500, res = 144)
+tidygraph::as_tbl_graph(tree) %>%
+  ggraph(layout = "tree") +
+  geom_edge_link(aes(label = label), angle_calc="along", label_dodge = unit(2.5, "mm")) + 
+  geom_node_label(aes(label = name)) + 
+  theme_void() # +
+  # theme(text = element_text(family = "AvantGarde"))
+
+ggsave("analysis/failed-tree.pdf", width = 5, height = 5)
 
 
 # Distribution of sufficient statistics ----------------------------------------
@@ -212,3 +218,44 @@ ggplot(non_existance, aes(x = edges, y = ttriad)) +
   scale_fill_viridis_c() +
   theme(text = element_text(family = "AvantGarde")) +
   ggsave("analysis/failed.pdf", width = 7, height = 4)
+
+# What are the errors reported by ergm?
+failures_mcmle <- lapply(res[failed_ergm], "[[", "ergm")
+failures_mcmle <- sapply(failures_mcmle, as.character)
+table(failures_mcmle)
+
+
+failures_mle <- lapply(res[failed_ergmito], "[[", "ergmito")
+failures_mle <- sapply(failures_mle, as.character)
+table(failures_mle)
+
+# Failures as a function of sample size ----------------------------------------
+sampsize <- sapply(dgp, function(d) nnets(d$nets))
+
+failures <- data.table(
+  Size   = sampsize,
+  Model  = c(rep("MC-MLE", length(sampsize)), rep("MLE", length(sampsize))), 
+  Failed = c(failed_ergm, failed_ergmito)
+)
+
+failures <- failures[, list(ErrRate = mean(Failed)),by=c("Model", "Size")]
+
+failures <- cbind(failures[Model=="MC-MLE", ], failures[Model=="MLE"]$ErrRate)
+failures$Model <- NULL
+names(failures) <- c("Sample size", "MC-MLE", "MLE")
+
+tab <- xtable(
+  failures, 
+  caption = "\\label{tab:error-sampsize}Error probability my method and sample size.")
+align(tab) <- c("l", "l", "c", "c")
+print(
+  tab,
+  booktabs = TRUE,
+  file = "analysis/failed_by_size.tex",
+  include.rownames = FALSE
+)
+
+tab <- readLines("analysis/failed_by_size.tex")
+tab[grepl("\\\\toprule", tab)] <- 
+  "\\toprule & \\multicolumn{2}{c}{P(Error)} \\\\ \\cmidrule(r){2-3}"
+writeLines(tab, "analysis/failed_by_size.tex")
