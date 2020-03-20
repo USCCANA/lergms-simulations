@@ -15,7 +15,8 @@ e <- experiments[1]
 term_name <- c("edges", gsub(".+[-](?=[a-zA-Z]+$)", "", e, perl = TRUE))
 
 # Reading data
-res  <- readRDS(sprintf("simulations/%s.rds", e))
+# res  <- readRDS(sprintf("simulations/%s.rds", e))
+res <- readRDS("simulations/02-various-sizes-4-5-ttriad-exact-hessian.rds")
 dgp  <- readRDS(sprintf("simulations/%s-dat.rds", e))
 pars <- lapply(dgp, "[[", "par")
 

@@ -21,7 +21,7 @@ for (i in seq_along(experiments)) {
   term_name <- c("edges", gsub(".+[-](?=[a-zA-Z]+$)", "", e, perl = TRUE))
   
   # Reading data
-  res  <- readRDS(sprintf("simulations/%s.rds", e))
+  res  <- readRDS("02-various-sizes-4-5-ttriad.rds") # readRDS(sprintf("simulations/%s.rds", e))
   dgp  <- readRDS(sprintf("simulations/%s-dat.rds", e))
   pars <- lapply(dgp, "[[", "par")
   
@@ -87,12 +87,13 @@ for (i in seq_along(experiments)) {
       text = element_text(family = "AvantGarde")
       ) 
   print(p)
-  p +
-    ggsave(
-      sprintf("simulations/bias-%s.pdf", e),
-      width = 8*.8, height = 6*.8
-      )
-  
+  p 
+  # +
+  #   ggsave(
+  #     sprintf("simulations/bias-%s.pdf", e),
+  #     width = 8*.8, height = 6*.8
+  #     )
+  # 
   # Absolute bias size
   dat <- data.frame(
     Diff = c(abs(bias_ergm[,1]) - abs(bias_ergmito[,1]), abs(bias_ergm[,2]) - abs(bias_ergmito[,2])),
@@ -113,10 +114,11 @@ for (i in seq_along(experiments)) {
   
   print(p)
   
-  p + ggsave(sprintf("simulations/bias-absdiff-%s.pdf", e),
-           width = 8*.8, height = 6*.8)
-  
-  
+  p
+  # + ggsave(sprintf("simulations/bias-absdiff-%s.pdf", e),
+  #          width = 8*.8, height = 6*.8)
+  # 
+  # 
   
   
     
@@ -156,9 +158,10 @@ for (i in seq_along(experiments)) {
   
   print(p)
   
-  p +
-    ggsave(sprintf("simulations/bias-elapsed-%s.pdf", e),
-           width = 8*.8, height = 6*.8)
+  p 
+  # +
+  #   ggsave(sprintf("simulations/bias-elapsed-%s.pdf", e),
+  #          width = 8*.8, height = 6*.8)
   
   # ggplot(times_ergm, aes(y = Relative, x = "")) +
   #   geom_violin() + scale_y_log10()
