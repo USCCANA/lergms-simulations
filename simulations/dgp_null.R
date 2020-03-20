@@ -16,7 +16,7 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 2e4
+nsim   <- 17500
 
 # Simulating -------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ U <- c(rev(-U), U)
 params_3_5 <- lapply(1:nsim, function(i) c(sample(U, 1, TRUE), 0))
 
 
-sizes <- c(5, 10, 30, 50, 100, 150, 200, 300)
+sizes <- c(5, 10, 15, 20, 30, 50, 100)
 nsizes <- length(sizes)
 S <- vector("list", nsizes)
 for (i in seq_along(S)) {
@@ -40,13 +40,13 @@ sizes_4_5 <- lapply(seq_len(nsim), function(i) sizes_4_5[i, ])
 
 # Putting all together ---------------------------------------------------------
 
-library(sluRm)
-opts_sluRm$set_tmp_path("/staging/ggv")
-opts_sluRm$set_job_name("ergmito-dgp-null")
-opts_sluRm$set_opts(time = "04:00:00", account="lc_dvc", partition="conti")
-opts_sluRm$verbose_on()
+library(slurmR)
+opts_slurmR$set_tmp_path("/staging/ggv")
+opts_slurmR$set_job_name("ergmito-dgp-null")
+opts_slurmR$set_opts(time = "04:00:00", account="lc_dvc", partition="conti")
+opts_slurmR$verbose_on()
 
-opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
+opts_slurmR$set_opts(account="lc_pdt", partition="thomas")
 
 # Mutual model
 dgp_4_5_null <- Slurm_Map(
