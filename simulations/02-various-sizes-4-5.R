@@ -1,7 +1,7 @@
 library(ergmito)
 library(ergm)
 library(parallel)
-library(sluRm)
+library(slurmR)
 
 # Loading simulation function and data
 source("data/fitter.R")
@@ -10,19 +10,19 @@ source("data/fitter.R")
 dat <- readRDS("simulations/dgp_4_5_ttriad.rds")
 
 # Creating cluster
-opts_sluRm$set_tmp_path("/staging/ggv/")
-opts_sluRm$set_job_name("02-various-sizes-4-5-ttriad")
-opts_sluRm$set_opts(
-  account = "lc_dvc",
-  partition="conti",
+opts_slurmR$set_tmp_path("/staging/ggv/")
+opts_slurmR$set_job_name("02-various-sizes-4-5-ttriad")
+opts_slurmR$set_opts(
+ # account = "lc_dvc",
+  partition="scavenge",
   time="04:00:00", `mem-per-cpu` = "1G"
 )
 
 # Checking veb
-opts_sluRm$verbose_on()
+opts_slurmR$verbose_on()
 
 job2 <- Slurm_lapply(
-   dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait",
+   dat, fitter, njobs = 300, mc.cores = 1L, plan = "wait",
    model = ~ edges + ttriad
    )
 

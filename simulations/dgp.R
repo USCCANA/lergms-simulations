@@ -39,13 +39,13 @@ sizes_4_5 <- lapply(seq_len(nsim), function(i )sizes_4_5[i, ])
 
 # Putting all together ---------------------------------------------------------
 
-library(sluRm)
-opts_sluRm$set_tmp_path("/staging/ggv")
-opts_sluRm$set_job_name("ergmito-dgp")
-opts_sluRm$set_opts(time = "04:00:00", account="lc_dvc", partition="conti")
-opts_sluRm$verbose_on()
+library(slurmR)
+opts_slurmR$set_tmp_path("/staging/ggv")
+opts_slurmR$set_job_name("ergmito-dgp")
+opts_slurmR$set_opts(time = "04:00:00", account="lc_dvc", partition="conti")
+opts_slurmR$verbose_on()
 
-opts_sluRm$set_opts(account="lc_pdt", partition="thomas")
+opts_slurmR$set_opts(account="lc_pdt", partition="thomas")
 
 # Mutual model
 dgp_4_5_mutual <- Slurm_Map(

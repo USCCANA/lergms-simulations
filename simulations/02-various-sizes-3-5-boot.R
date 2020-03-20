@@ -1,6 +1,6 @@
 library(lergm)
 library(parallel)
-library(sluRm)
+library(slurmR)
 
 # Loading simulation function
 source("data/simfun.R")
@@ -19,9 +19,9 @@ source("data/simfun.R")
 dat <- readRDS("simulations/dgp_3_5.rds") # Map(function(p,s) {list(par = p, size = s)}, p = params, s = sizes)
 
 # Creating cluster
-opts_sluRm$set_chdir("/staging/ggv/")
-opts_sluRm$set_job_name("02-various-sizes-3-5-boot")
-opts_sluRm$set_opts(account = "lc_pdt", partition="thomas", time = "10:00:00")
+opts_slurmR$set_chdir("/staging/ggv/")
+opts_slurmR$set_job_name("02-various-sizes-3-5-boot")
+opts_slurmR$set_opts(account = "lc_pdt", partition="thomas", time = "10:00:00")
 
 job <- Slurm_lapply(dat, simfun, njobs = 45, mc.cores = 4L, boot = TRUE)
 ans <- Slurm_collect(job)
