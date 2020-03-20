@@ -194,7 +194,8 @@ align(tab) <- rep("c", length(align(tab)))
 caption(tab) <- paste(
   "\\label{tab:typeI}Empirical Type I error rates.",
   "The $\\chi^2$ statistic is from a 2-sample test for equality of proportions,",
-  "and the significance levels are given by *** $p$ < 0.001, ** $p$ < 0.01, and * $p$ < 0.05."
+  "and the significance levels are given by *** $p < 0.001$, ** $p < 0.01$, and * $p < 0.05$.",
+  "The lack of fitted samples in some levels is due to failure of the estimation method."
 )
 print(tab, file = "analysis/typeI.tex", append = FALSE, booktabs = TRUE,
       include.rownames = FALSE)
