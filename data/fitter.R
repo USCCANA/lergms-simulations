@@ -74,7 +74,7 @@ fitter <- function(model, d, boot = FALSE) {
     estimates_mcmle <- ans_mcmle
   
   if (inherits(ans_rm, "ergm")) {
-    estimates_ergm <- list(
+    estimates_rm <- list(
       coef = coef(ans_rm),
       ci   = confint(ans_rm),
       vcov = vcov(ans_rm),
@@ -88,9 +88,9 @@ fitter <- function(model, d, boot = FALSE) {
     estimates_rm <- ans_rm
   
   list(
-    mle = estimates_mle,
-    mcmle    = estimates_mcmle,
-    rm = estimates_rm
+    mle   = estimates_mle,
+    mcmle = estimates_mcmle,
+    rm    = estimates_rm
   )
   
 }

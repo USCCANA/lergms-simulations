@@ -1,3 +1,12 @@
+#!/bin/sh
+#SBATCH --job-name=02-various-sizes-4-5
+#SBATCH --output=logs/02-various-sizes-4-5.out
+#SBATCH --time=12:00:00
+#SBATCH --mem-per-cpu=16G
+#SBATCH --partition=scavenge
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=g.vegayon@gmail.com
+
 library(ergmito)
 library(ergm)
 library(parallel)
