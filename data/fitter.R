@@ -26,13 +26,28 @@ fitter <- function(model, d, boot = FALSE) {
     constraints = ~ blockdiag("block"),
     control     = control.ergm(
       # Default values equal to 1048
-      MCMC.samplesize = 1024L * 4L,
-      MCMC.interval   = 1024L * 4L,
-      MCMC.burnin     = 1024L * 8L,
+      MCMC.samplesize = 1024L * 2L,
+      MCMC.interval   = 1024L * 2L,
+      MCMC.burnin     = 1024L * 32L,
       seed            = 1L
       )
     ), error = function(e) e))
   
+  # We give it another chance if it was not able to fit it right
+  if (inherits(ans_mcmle, "error")) {
+    time_mcmle <- system.time(ans_mcmle <- tryCatch(ergm(
+      model_bd,
+      constraints = ~ blockdiag("block"),
+      control     = control.ergm(
+        # Default values equal to 1048
+        MCMC.samplesize = 1024L * 10L,
+        MCMC.interval   = 1024L * 10L,
+        MCMC.burnin     = 1024L * 64L,
+        seed            = 1L
+        )
+      ), error = function(e) e))
+    }
+   
   time_rm <- system.time(ans_rm <- tryCatch(ergm(
     model_bd,
     constraints = ~ blockdiag("block"),
@@ -41,13 +56,30 @@ fitter <- function(model, d, boot = FALSE) {
       # MCMC.samplesize = 2048L,
       # MCMC.interval   = 2048,
       main.method     = "Robbins-Monro",
-      MCMC.samplesize = 1024L * 4L,
-      MCMC.interval   = 1024L * 4L,
-      MCMC.burnin     = 1024L * 8L,
+      MCMC.samplesize = 1024L * 2L,
+      MCMC.interval   = 1024L * 2L,
+      MCMC.burnin     = 1024L * 32L,
       seed            = 1L
     )
   ), error = function(e) e))
-  
+ 
+  if (inherits(ans_rm, "error")) {
+    time_rm <- system.time(ans_rm <- tryCatch(ergm(
+      model_bd,
+      constraints = ~ blockdiag("block"),
+      control     = control.ergm(
+        # Default values equal to 1048
+        # MCMC.samplesize = 2048L,
+        # MCMC.interval   = 2048,
+        main.method     = "Robbins-Monro",
+        MCMC.samplesize = 1024L * 10L,
+        MCMC.interval   = 1024L * 10L,
+        MCMC.burnin     = 1024L * 64L,
+        seed            = 1L
+      )
+    ), error = function(e) e))
+  }
+ 
   if (inherits(ans_mle, "ergmito")) {
     estimates_mle <- list(
       coef       = coef(ans_mle),
@@ -86,7 +118,14 @@ fitter <- function(model, d, boot = FALSE) {
     )
   } else
     estimates_rm <- ans_rm
-  
+ 
+  if (exists("niter_", envir = .GlobalEnv)) {
+    niter_ <<- niter_ + 1L
+  } else
+    niter_ <<- 1L
+  message("Iteration number: ", niter_)
+
+ 
   list(
     mle   = estimates_mle,
     mcmle = estimates_mcmle,
@@ -94,4 +133,5 @@ fitter <- function(model, d, boot = FALSE) {
   )
   
 }
+
 

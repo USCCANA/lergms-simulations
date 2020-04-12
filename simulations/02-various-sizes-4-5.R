@@ -24,7 +24,7 @@ opts_slurmR$set_job_name("02-various-sizes-4-5-ttriad")
 opts_slurmR$set_opts(
  # account = "lc_dvc",
   partition="scavenge",
-  time="04:00:00", `mem-per-cpu` = "1G"
+  time="14:00:00", `mem-per-cpu` = "1G"
 )
 
 # Checking veb
@@ -35,7 +35,7 @@ job2 <- Slurm_lapply(
    model = ~ edges + ttriad
    )
 
-cat("~~ THE END ttriad ... COLLECTING ~~")
+cat("~~ THE END ttriad ... COLLECTING ~~\n")
 
 # Waiting just in case
 Sys.sleep(60*2)
@@ -45,5 +45,5 @@ ans2 <- Slurm_collect(job2)
 # saveRDS(ans1, "simulations/02-various-sizes-4-5-mutual.rds", compress = FALSE)
 saveRDS(ans2, "simulations/02-various-sizes-4-5-ttriad.rds", compress = FALSE)
 
-cat("~~ THE END ALL ~~")
+cat("~~ THE END ALL ~~\n")
 
