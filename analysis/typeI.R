@@ -13,14 +13,14 @@ experiments <- c(
 )
 
 # Colors to be used to fill the plots
-fillcols <- c(ergm = "gray", ergmito="black")
+fillcols <- c(mle="black", rm="blue", mcmle = "gray")
 fillcols[] <- adjustcolor(fillcols, alpha.f = .7) 
 
 e         <- experiments[1]
 term_name <- c("edges", gsub(".+[-](?=[a-zA-Z]+$)", "", e, perl = TRUE))
 
 # Reading data
-res  <- readRDS(sprintf("simulations/%s.rds", e))
+res  <- readRDS(sprintf("simulations/%s.rds", "03-various-sizes-4-5-null-rm"))
 dgp  <- readRDS(sprintf("simulations/%s-dat.rds", e))
 pars <- lapply(dgp, "[[", "par")
 

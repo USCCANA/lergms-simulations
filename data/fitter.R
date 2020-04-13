@@ -26,16 +26,20 @@ fitter <- function(model, d, boot = FALSE) {
     constraints = ~ blockdiag("block"),
     control     = control.ergm(
       # Default values equal to 1048
-      MCMC.samplesize = 1024L * 2L,
-      MCMC.interval   = 1024L * 2L,
-      MCMC.burnin     = 1024L * 32L,
+      MCMC.samplesize = 1024L * 1L,
+      MCMC.interval   = 1024L * 1L,
+      MCMC.burnin     = 1024L * 16L,
       seed            = 1L
       )
     ), error = function(e) e))
   
   # We give it another chance if it was not able to fit it right
+  time_mcmle0 <- NULL
   if (inherits(ans_mcmle, "error")) {
-    time_mcmle <- system.time(ans_mcmle <- tryCatch(ergm(
+    
+    time_mcmle0 <- time_mcmle
+    
+    time_mcmle  <- system.time(ans_mcmle <- tryCatch(ergm(
       model_bd,
       constraints = ~ blockdiag("block"),
       control     = control.ergm(
@@ -43,10 +47,10 @@ fitter <- function(model, d, boot = FALSE) {
         MCMC.samplesize = 1024L * 10L,
         MCMC.interval   = 1024L * 10L,
         MCMC.burnin     = 1024L * 64L,
-        seed            = 1L
+        seed            = 222L
         )
       ), error = function(e) e))
-    }
+  }
    
   time_rm <- system.time(ans_rm <- tryCatch(ergm(
     model_bd,
@@ -56,26 +60,40 @@ fitter <- function(model, d, boot = FALSE) {
       # MCMC.samplesize = 2048L,
       # MCMC.interval   = 2048,
       main.method     = "Robbins-Monro",
-      MCMC.samplesize = 1024L * 2L,
-      MCMC.interval   = 1024L * 2L,
-      MCMC.burnin     = 1024L * 32L,
+      MCMC.samplesize = 1024L * 1L,
+      MCMC.interval   = 1024L * 1L,
+      MCMC.burnin     = 1024L * 16L,
+      # Specifics for RM
+      RM.phase1n_base = 7,
+      RM.phase2n_base = 100,
+      RM.phase2sub    = 7,
+      RM.init_gain    = 0.5,
+      RM.phase3n      = 500,
       seed            = 1L
     )
   ), error = function(e) e))
  
+  time_rm0 <- NULL
   if (inherits(ans_rm, "error")) {
-    time_rm <- system.time(ans_rm <- tryCatch(ergm(
+    
+    time_rm0 <- time_rm
+    
+    time_rm  <- system.time(ans_rm <- tryCatch(ergm(
       model_bd,
       constraints = ~ blockdiag("block"),
       control     = control.ergm(
         # Default values equal to 1048
-        # MCMC.samplesize = 2048L,
-        # MCMC.interval   = 2048,
         main.method     = "Robbins-Monro",
         MCMC.samplesize = 1024L * 10L,
         MCMC.interval   = 1024L * 10L,
         MCMC.burnin     = 1024L * 64L,
-        seed            = 1L
+        # Specifics for RM
+        RM.phase1n_base = 7 + 6, # M1 in lusher, koskinen, robins
+        RM.phase2n_base = 100,   
+        RM.phase2sub    = 7 + 6, # In PNet they take the average
+        RM.init_gain    = 0.1,   # a in lusher, koskinen, robins
+        RM.phase3n      = 1000L,
+        seed            = 222L
       )
     ), error = function(e) e))
   }
@@ -100,21 +118,23 @@ fitter <- function(model, d, boot = FALSE) {
         ergm.degeneracy(ans_mcmle)$degeneracy.value)
       ),
       ll   = logLik(ans_mcmle),
-      time = time_mcmle
+      time  = time_mcmle,
+      time0 = time_mcmle0
     )
   } else
     estimates_mcmle <- ans_mcmle
   
   if (inherits(ans_rm, "ergm")) {
     estimates_rm <- list(
-      coef = coef(ans_rm),
-      ci   = confint(ans_rm),
-      vcov = vcov(ans_rm),
+      coef  = coef(ans_rm),
+      ci    = confint(ans_rm),
+      vcov  = vcov(ans_rm),
       degeneracy = any(is.infinite(
         ergm.degeneracy(ans_rm)$degeneracy.value)
       ),
-      ll   = logLik(ans_rm),
-      time = time_rm
+      ll    = logLik(ans_rm),
+      time  = time_rm,
+      time0 = time_rm0
     )
   } else
     estimates_rm <- ans_rm
@@ -123,9 +143,15 @@ fitter <- function(model, d, boot = FALSE) {
     niter_ <<- niter_ + 1L
   } else
     niter_ <<- 1L
-  message("Iteration number: ", niter_)
+  
+  # Pasting iteration number
+  message(
+    paste(rep("#", options()$width), collapse=""),
+    "\nIteration number: ",
+    niter_, "\n",
+    paste(rep("#", options()$width), collapse="")
+    )
 
- 
   list(
     mle   = estimates_mle,
     mcmle = estimates_mcmle,
@@ -133,5 +159,3 @@ fitter <- function(model, d, boot = FALSE) {
   )
   
 }
-
-
