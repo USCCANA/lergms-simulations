@@ -33,8 +33,12 @@ opts_slurmR$set_opts(
 opts_slurmR$verbose_on()
 
 job2 <- Slurm_lapply(
-   dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait",
-   model = ~ edges + ttriad
+   dat,
+   fitter,
+   njobs    = 300,
+   mc.cores = 1L,
+   plan     = "wait",
+   model    = ~ edges + ttriad
    )
 
 cat("~~ THE END ttriad ... COLLECTING ~~\n")
