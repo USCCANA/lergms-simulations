@@ -3,7 +3,8 @@
 #SBATCH --output=logs/02-various-sizes-4-5.out
 #SBATCH --time=12:00:00
 #SBATCH --mem-per-cpu=16G
-#SBATCH --partition=scavenge
+#SBATCH --partition=thomas
+#SBATCH --account=lc_pdt
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=g.vegayon@gmail.com
 
@@ -22,16 +23,17 @@ dat <- readRDS("simulations/dgp_4_5_ttriad.rds")
 opts_slurmR$set_tmp_path("/staging/ggv/")
 opts_slurmR$set_job_name("02-various-sizes-4-5-ttriad")
 opts_slurmR$set_opts(
- # account = "lc_dvc",
-  partition="scavenge",
-  time="14:00:00", `mem-per-cpu` = "1G"
+  account       = "lc_pdt",
+  partition     = "thomas",
+  time          = "10:00:00",
+  `mem-per-cpu` = "1G"
 )
 
 # Checking veb
 opts_slurmR$verbose_on()
 
 job2 <- Slurm_lapply(
-   dat, fitter, njobs = 300, mc.cores = 1L, plan = "wait",
+   dat, fitter, njobs = 200, mc.cores = 1L, plan = "wait",
    model = ~ edges + ttriad
    )
 
