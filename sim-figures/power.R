@@ -3,7 +3,7 @@ library(magrittr)
 library(ergmito)
 library(data.table)
 
-source("simulations/interval_tags.R")
+source("sim-figures/interval_tags.R")
 intervals_effect <- c(.1, .5, 1, 2)
 
 experiments <- c(
@@ -12,7 +12,7 @@ experiments <- c(
 )
 
 # Colors to be used to fill the plots
-fillcols <- c(ergm = "gray", ergmito="black")
+fillcols <- c("MC-MLE" = "gray", MLE="white", "RM" = "black")
 fillcols[] <- adjustcolor(fillcols, alpha.f = .7) 
 
 e         <- experiments[1]
@@ -20,7 +20,6 @@ term_name <- c("edges", gsub(".+[-](?=[a-zA-Z]+$)", "", e, perl = TRUE))
 
 # Reading data
 res  <- readRDS(sprintf("simulations/%s.rds", e))
-res2 <- readRDS("02-various-sizes-4-5-ttriad.rds")
 dgp  <- readRDS(sprintf("simulations/%s-dat.rds", e))
 pars <- lapply(dgp, "[[", "par")
 
@@ -30,25 +29,19 @@ sizes <- sort(unique(unlist(sizes)))
 
 sizes_labs <- structure(paste(sizes, "nets."), names = sizes)
 
-# Found by ERGM
-fitted_mcmle <- sapply(res, function(r) {
-  if (inherits(r$ergm, "error"))
-    return(FALSE)
-  !r$ergm$degeneracy
-}) %>% which
+# Alternatively, we are defining the common set to that in which the graphs are
+# not fully connected nor are empty
+fitted_common <- sapply(dgp, function(d) {
+  n <- nvertex(d$nets)
+  d <- count_stats(d$nets ~ edges + ttriad)
+  any(d[,2] > 0) & any(d[,1] < (n*(n-1)))
+})
 
-fitted_mle <- sapply(res, function(r) {
-  if (inherits(r$ergmito, "error"))
-    return(FALSE)
-  r$ergmito$status == 0L
-}) %>% which
-
-
-fitted_common <- intersect(fitted_mcmle, fitted_mle)
+fitted_common <- which(fitted_common)
 nfitted <- length(fitted_common)
 
 # Signs of the dgp
-signs <- lapply(dgp[fitted_common], "[[", "par") %>%
+signs <- lapply(dgp, "[[", "par") %>%
   do.call(rbind, .)
 signs[] <- sign(signs)
 
@@ -74,42 +67,66 @@ power_calc <- function(dat, true_sign) {
   
 }
 
-# Ergm ---------------------------------------
-
-power_mcmle <- res[fitted_common] %>%
-  lapply("[[", "ergm") %>%
-  lapply("[[", "ci")
+# MCMLE ---------------------------------------
+power_mcmle <- lapply(res, "[[", "mcmle")
+power_mcmle <- lapply(power_mcmle, function(i) {
+  if (inherits(i, "error"))
+    return(matrix(NA, nrow = 4, ncol = 4))
+  i$ci
+})
 
 power_mcmle <- power_calc(power_mcmle, signs)
 
 
-# Ergmito ----------------------
-power_mle <- res[fitted_common] %>%
-  lapply("[[", "ergmito") %>%
-  lapply("[[", "ci")
-
-power_mle2 <- res2[fitted_common] %>%
-  lapply("[[", "ergmito") %>%
-  lapply("[[", "ci")
-
-# Comparing vcovs
-difference <- parallel::mcMap(function(x1, x2) sqrt(sum((x1 - x2)^2)), 
-                x1 = power_mle, x2 = power_mle2)
-difference <- unlist(difference)
-difference <- which(difference > 1)
-power_mle2[difference]
-power_mle[difference]
+# MLE ----------------------
+power_mle <- lapply(res, "[[", "mle")
+power_mle <- lapply(power_mle, function(i) {
+  if (inherits(i, "error"))
+    return(matrix(NA, nrow = 4, ncol = 4))
+  i$ci
+})
 
 power_mle <- power_calc(power_mle, signs)
-power_mle2 <- power_calc(power_mle2, signs)
+
+# RM ----------------------
+power_rm <- lapply(res, "[[", "rm")
+power_rm <- lapply(power_rm, function(i) {
+  if (inherits(i, "error"))
+    return(matrix(NA, nrow = 4, ncol = 4))
+  i$ci
+})
+
+power_rm <- power_calc(power_rm, signs)
+
+# Generating contingency table comparing all against all
+addmargins(table(MLE = power_mle[,2], MCMLE = power_mcmle[,2], useNA = "always"))
+addmargins(table(MLE = power_mle[,2], RM = power_rm[,2], useNA = "always"))
+
+# Correcting for the next of the analysis
+power_mle[is.na(power_mle)]     <- FALSE
+power_mcmle[is.na(power_mcmle)] <- FALSE
+power_rm[is.na(power_rm)]       <- FALSE
+signs       <- signs[fitted_common, , drop = FALSE]
+power_mcmle <- power_mcmle[fitted_common, , drop = FALSE]
+power_mle   <- power_mle[fitted_common, , drop = FALSE]
+power_rm    <- power_rm[fitted_common, , drop = FALSE]
+
+
+# Looking at cases in which MCMLE has more power -----------------
+idx <- which(power_mle[,2] == FALSE & power_mcmle[,2] == TRUE)
+head(res[fitted_common][idx])
+table(MLE = power_mle[,2], MCMLE = power_mcmle[,2], useNA = "ifany") %>%
+  # prop.table() %>%
+  addmargins() %>%
+  print(digits = 2)
 
 # Plot -------------------------------------
 dat <- data.frame(
-  Power = c(as.vector(power_mle2), as.vector(power_mcmle)),
+  Power = c(as.vector(power_mle), as.vector(power_mcmle), as.vector(power_rm)),
   Model = c(
-    rep("ergmito", nfitted*2), rep("ergm", nfitted*2)
+    rep("MLE", nfitted*2), rep("MC-MLE", nfitted*2), rep("RM", nfitted*2)
   ),
-  Term = rep(c(rep("edges", nfitted), rep(term_name[2], nfitted)), 2),
+  Term = rep(c(rep("edges", nfitted), rep(term_name[2], nfitted)), 3),
   Size = sapply(lapply(dgp[fitted_common], "[[", "size") , sum),
   Prop5 = sapply(lapply(dgp[fitted_common], "[[", "size") , function(i) i[2]/sum(i)),
   Par  = c(
@@ -122,9 +139,9 @@ dat <- data.frame(
     mean(nedges(d$nets)/(nvertex(d$nets)*(nvertex(d$nets) - 1)))
     })
     
-) %>% data.table()
+)
 
-
+dat <- data.table(dat)
 
 dat[, EffectSize := interval_tags(abs(Par), intervals_effect)]
 dat[, Prop5 := interval_tags(Prop5, c(0, .2, .4, .6, .8, 1))]
@@ -156,10 +173,7 @@ p <- ggplot(dat_tmp, aes(y = Power, fill=Model)) +
 
 print(p)
 
-ggsave(
-    sprintf("analysis/power-by-model.pdf", e),
-    width = 8*.8, height = 6*.8
-  )
+ggsave("sim-figures/power-by-model.pdf", width = 8*.8, height = 6*.8)
   
 # Testing wether the difference is statistically significant. ------------------
 
@@ -185,21 +199,31 @@ for (e in Esizes) {
       # Making the test
       tmp_test <- with(
         test[Term == term & Size == s & EffectSize == e],
-        prop.test(Power, n = N)
+        prop.test(
+          c(MLE    = Power[Model == "MLE"],
+          `MC-MLE` = Power[Model == "MC-MLE"]
+          ),
+          n = N
+          )
       )
       
       # Saving the differences
-      differences[s, term, e] <- tmp_test$p.value
+      differences[s, term, e] <- sprintf(
+        "[%.2f, %.2f]%s",
+        tmp_test$conf.int[1],
+        tmp_test$conf.int[2],
+        ifelse(tmp_test$p.value < .01, "***",
+               ifelse(tmp_test$p.value < .05, "**",
+                      ifelse(tmp_test$p.value < .1, "*", "")))
+      )
+      
+      # if (tmp_test$p.value < .05) {
+      #   print(tmp_test)
+      # }
       
     }
   }
 }
-
-# This returns an error iff differences are significant!
-stopifnot(all(differences > .1))
-
-
-
 
 # Power by average density -----------------------------------------------------
 dat_tmp <- dat[
@@ -230,7 +254,7 @@ dat_tmp <- dat[, list(Power = mean(Power, na.rm=TRUE)), by = .(Model, Term, Size
 lvls <- c(5, 30, 50, 100, 300)
 dat_tmp[, Size := interval_tags(Size, lvls)]
 
-p <- ggplot(dat_tmp[Model == "ergmito"], aes(y = Power, fill = Prop5)) +
+p <- ggplot(dat_tmp[Model == "MLE"], aes(y = Power, fill = Prop5)) +
   geom_col(aes(x = Prop5), position="dodge") +
   theme_bw() +
   theme(text = element_text(family = "AvantGarde")) +
@@ -244,8 +268,7 @@ p <- ggplot(dat_tmp[Model == "ergmito"], aes(y = Power, fill = Prop5)) +
     )
 
 p +
-  ggsave(
-    sprintf("analysis/power-by-prop-of-fives.pdf", e),
+  ggsave("sim-figures/power-by-prop-of-fives.pdf",
     width = 8*.8, height = 6*.8
   )
 
