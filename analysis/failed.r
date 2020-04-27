@@ -62,26 +62,39 @@ for (full in c(TRUE)) {
     Failed = c(failed_mcmle, failed_mle, failed_rm)
   )
   
-  failures <- failures[, list(ErrRate = mean(Failed)),by=c("Model", "Size")]
+  failures <- failures[, list(ErrRate = sum(Failed)),by=c("Model", "Size")]
   
   failures <- cbind(failures[Model=="MLE", ], failures[Model=="MC-MLE"]$ErrRate, failures[Model=="RM"]$ErrRate)
   failures$Model <- NULL
   names(failures) <- c("Sample size", "MLE", "MC-MLE", "RM")
+  failures <- rbind(
+    failures,
+    with(
+      failures,
+      data.table(
+        `Sample size` = "\\midrule Total",
+        MLE           = sum(`MLE`),
+        `MC-MLE`      = sum(`MC-MLE`),
+        RM            = sum(RM)
+        )
+      )
+  )
   
   tab <- xtable(
     failures, 
-    caption = "\\label{tab:error-sampsize}Error probability my method and sample size.",
+    caption = "\\label{tab:error-sampsize}Number of times the program failed to fit a model and returned with an error.",
     )
   align(tab) <- c("l", "l", "c", "c", "c")
   print(
     tab,
     booktabs = TRUE,
     file = "analysis/failed_by_size.tex",
-    include.rownames = FALSE
+    include.rownames = FALSE, 
+    sanitize.text.function = function(e) e
   )
   
   tab <- readLines("analysis/failed_by_size.tex")
   tab[grepl("\\\\toprule", tab)] <- 
-    "\\toprule & \\multicolumn{3}{c}{P(Error)} \\\\ \\cmidrule(r){2-4}"
+    "\\toprule & \\multicolumn{3}{c}{\\# of errors)} \\\\ \\cmidrule(r){2-4}"
   writeLines(tab, "analysis/failed_by_size.tex")
 }
