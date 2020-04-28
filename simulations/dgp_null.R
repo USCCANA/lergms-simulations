@@ -1,8 +1,16 @@
+#!/bin/sh
+#SBATCH --partition=thomas
+#SBATCH --account=lc_pdt
+#SBATCH --time=04:00:00
+#SBATCH --mem=16gb
+#SBATCH --mail-user=g.vegayon@gmail.com
+#SBATCH --mail-type=ALL
 
 # Sampler
 library(ergmito)
 set.seed(12)
-sampler_3_5_edges <- new_rergmito(rbernoulli(4, .5) ~ edges + ctriad, sizes = 3:5, mc.cores = 1L)
+data(fivenets)
+sampler_3_5_edges <- new_rergmito(fivenets ~ edges, sizes = 3:5, mc.cores = 1L)
 
 # Function to simulate networks
 simfun <- function(size, par, sampler) {
@@ -16,7 +24,7 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 17500
+nsim   <- 21000
 
 # Simulating -------------------------------------------------------------------
 
@@ -24,8 +32,7 @@ nsim   <- 17500
 U <- seq(from = .1, to = 2, by = .05)
 U <- c(rev(-U), U)
 
-params_3_5 <- lapply(1:nsim, function(i) c(sample(U, 1, TRUE), 0))
-
+params_3_5 <- lapply(1:nsim, function(i) sample(U, 1, TRUE))
 
 sizes <- c(5, 10, 15, 20, 30, 50, 100)
 nsizes <- length(sizes)
@@ -59,7 +66,8 @@ dgp_4_5_null <- Slurm_Map(
   mc.cores = 1L,
   export   = c("simfun", "sampler_3_5_edges"),
   plan     = "wait",
-  job_name = "ergmito-dgp-null-map"
+  job_name = "ergmito-dgp-null-map",
+  sbatch_opt = list(`mem-per-cpu` = "2gb")
 )
 
 
@@ -68,5 +76,5 @@ Sys.sleep(30)
 
 # Transitive triads model
 dgp_4_5_null <- Slurm_collect(dgp_4_5_null)
-saveRDS(dgp_4_5_null, "simulations/dgp_4_5_null.rds")
+saveRDS(dgp_4_5_null, "simulations/dgp_4_5_null-larger.rds")
 

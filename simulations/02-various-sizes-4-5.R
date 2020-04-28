@@ -35,7 +35,7 @@ opts_slurmR$verbose_on()
 job2 <- Slurm_lapply(
    dat,
    fitter,
-   njobs    = 300,
+   njobs    = 150,
    mc.cores = 1L,
    plan     = "wait",
    model    = ~ edges + ttriad

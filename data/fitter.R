@@ -1,7 +1,7 @@
 # library(ergmito)
 # library(ergm)
 
-fitter <- function(model, d, boot = FALSE) {
+fitter <- function(model, d, boot = FALSE, include = c(mle = TRUE, mcmle = TRUE, rm = TRUE)) {
   
   # Simulating networks
   nets <- d$nets
@@ -26,9 +26,9 @@ fitter <- function(model, d, boot = FALSE) {
     constraints = ~ blockdiag("block"),
     control     = control.ergm(
       # Default values equal to 1048
-      MCMC.samplesize = 1024L * 1L,
-      MCMC.interval   = 1024L * 1L,
-      MCMC.burnin     = 1024L * 16L,
+      MCMC.samplesize = 1024L * 2L,
+      MCMC.interval   = 1024L * 2L,
+      MCMC.burnin     = 1024L * 32L,
       seed            = 1L
       )
     ), error = function(e) e))
@@ -60,9 +60,9 @@ fitter <- function(model, d, boot = FALSE) {
       # MCMC.samplesize = 2048L,
       # MCMC.interval   = 2048,
       main.method     = "Robbins-Monro",
-      MCMC.samplesize = 1024L * 1L,
-      MCMC.interval   = 1024L * 1L,
-      MCMC.burnin     = 1024L * 16L,
+      MCMC.samplesize = 1024L * 2L,
+      MCMC.interval   = 1024L * 2L,
+      MCMC.burnin     = 1024L * 32L,
       # Specifics for RM
       RM.phase1n_base = 7,
       RM.phase2n_base = 100,
@@ -159,3 +159,5 @@ fitter <- function(model, d, boot = FALSE) {
   )
   
 }
+
+

@@ -17,16 +17,16 @@ library(slurmR)
 source("data/fitter.R")
 
 # Transitive model -------------------------------------------------------------
-dat <- readRDS("simulations/dgp_4_5_null.rds")
+dat <- readRDS("simulations/dgp_4_5_null-larger.rds")
 
 # Creating cluster
 opts_slurmR$set_tmp_path("/staging/ggv/")
 opts_slurmR$set_job_name("03-various-sizes-4-5-null")
 opts_slurmR$set_opts(
-  account       = "lc_pdt",
-  partition     = "thomas",
-  time          = "10:00:00",
-  `mem-per-cpu` = "1G"
+  account       = "lc_ggv",
+  partition     = "scavenge",
+  time          = "04:00:00",
+  `mem-per-cpu` = "2G"
 )
 
 # Checking veb
@@ -35,7 +35,7 @@ opts_slurmR$verbose_on()
 job2 <- Slurm_lapply(
    dat,
    fitter,
-   njobs    = 300,
+   njobs    = 400,
    mc.cores = 1L,
    plan     = "wait",
    model    = ~ edges + ttriad
@@ -49,7 +49,7 @@ Sys.sleep(60*2)
 # ans1 <- Slurm_collect(job1)
 ans2 <- Slurm_collect(job2)
 # saveRDS(ans1, "simulations/02-various-sizes-4-5-mutual.rds", compress = FALSE)
-saveRDS(ans2, "simulations/03-various-sizes-4-5-null.rds", compress = FALSE)
+saveRDS(ans2, "simulations/03-various-sizes-4-5-null-larger.rds", compress = FALSE)
 
 cat("~~ THE END ALL ~~\n")
 
