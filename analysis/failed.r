@@ -98,3 +98,91 @@ for (full in c(TRUE)) {
     "\\toprule & \\multicolumn{3}{c}{\\# of errors)} \\\\ \\cmidrule(r){2-4}"
   writeLines(tab, "analysis/failed_by_size.tex")
 }
+
+# Looking a the space of failures ----------------------------------------------
+
+# Listing failed ones
+conv_mle <- sapply(res, function(r) {
+  if (inherits(r$mle, "error"))
+    return(FALSE)
+  r$mle$status == 0
+})
+
+conv_mcmle <- sapply(res, function(r) {
+  if (inherits(r$mcmle, "error"))
+    return(FALSE)
+  !r$mcmle$degeneracy
+})
+
+conv_rm <- sapply(res, function(r) {
+  if (inherits(r$rm, "error"))
+    return(FALSE)
+  !r$rm$degeneracy
+})
+
+
+
+# Failed cases
+mat4 <- matrix(1, ncol = 4, nrow = 4)
+diag(mat4) <- 0
+mat5 <- matrix(1, ncol = 5, nrow = 5)
+diag(mat5) <- 0
+
+maxref <- matrix(ncol=2, nrow=5)
+maxref[4,] <- count_stats(mat4 ~ edges + ttriad)
+maxref[5,] <- count_stats(mat5 ~ edges + ttriad)
+
+stats <- parallel::mclapply(lapply(dgp, "[[", "nets"), count_stats, terms = c("edges", "ttriad"), mc.cores = 3L)
+sizes_failed <- parallel::mclapply(lapply(dgp, "[[", "nets"), nvertex, mc.cores = 3L)
+stats <- parallel::mcMap(function(x, s) {
+  
+  # Normalizing to the size
+  colMeans(x/maxref[s,])
+  
+}, x = stats, s = sizes_failed, mc.cores = 4L)
+stats <- as.data.frame(do.call(rbind, stats))
+colnames(stats) <- c("edges", "ttriad")
+
+# Creating a supper set
+dat <- rbind(
+  cbind(stats[which(conv_mle),], Method = "MLE", Failed = "Converge"),
+  cbind(stats[which(!conv_mle),], Method = "MLE", Failed = "Did not converge"),
+  cbind(stats[which(conv_mcmle),], Method = "MC-MLE", Failed = "Converge"),
+  cbind(stats[which(!conv_mcmle),], Method = "MC-MLE", Failed = "Did not converge"),
+  cbind(stats[which(conv_rm),], Method = "RM", Failed = "Converge"),
+  cbind(stats[which(!conv_rm),], Method = "RM", Failed = "Did not converge")
+)
+
+dat <- as.data.table(dat)
+set.seed(12315)
+idx <- sort(sample.int(nrow(dat)/3, nrow(dat)/3*.4))
+dat[, keep := 1:.N %in% idx, by = Method]
+dat[, keep := keep | ((abs(.5 - edges) <= .4) & (abs(.5 - ttriad) <= .4)), by = Method]
+
+ggplot(dat, aes(x=edges, y=ttriad)) +
+  facet_grid(Method ~ Failed) +
+  theme_bw() +
+  # lims(x = c(0,1), y=c(0,1)) +
+  geom_point(
+    size=.75,
+    aes(x = edges, y = ttriad),
+    data = dat[keep== TRUE],
+    color = adjustcolor("darkgray", .7)
+    ) +
+  # geom_jitter(color = adjustcolor("gray", .7))
+  stat_density2d(
+    geom="tile",
+    aes(fill=..density..^0.75, alpha=1),
+    contour =FALSE,
+    h = c(.2, .2), n = 40,
+    ) + 
+  scale_fill_gradientn(colours = colorRampPalette(c("white", "black"))(256)) +
+  theme(
+    text        = element_text(family = "AvantGarde"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.position = "none" 
+  )
+
+ggsave("sim-figures/failed.pdf", width = 5, height = 6)
+  
+

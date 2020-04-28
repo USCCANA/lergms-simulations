@@ -13,8 +13,8 @@ fillcols[] <- adjustcolor(fillcols, alpha.f = .7)
 term_name <- c("edges", "ttriad")
 
 # Reading data
-res  <- readRDS(sprintf("simulations/%s.rds", "03-various-sizes-4-5-null"))
-dgp  <- readRDS(sprintf("simulations/%s-dat.rds", "03-various-sizes-4-5-null"))
+res  <- readRDS("simulations/03-various-sizes-4-5-null-larger.rds")
+dgp  <- readRDS("simulations/dgp_4_5_null-larger.rds")
 pars <- lapply(dgp, "[[", "par")
 
 sizes <- lapply(dgp, "[[", "size")
@@ -25,12 +25,12 @@ sizes_labs <- structure(paste(sizes, "nets."), names = sizes)
 
 # Alternatively, we are defining the common set to that in which the graphs are
 # not fully connected nor are empty
-fitted_common <- sapply(dgp, function(d) {
+fitted_common <- parallel::mclapply(dgp, function(d) {
   n <- nvertex(d$nets)
   d <- count_stats(d$nets ~ edges + ttriad)
   any(d[,2] > 0) & any(d[,1] < (n*(n-1)))
-})
-
+}, mc.cores = 3L)
+fitted_common <- unlist(fitted_common)
 fitted_common <- which(fitted_common)
 nfitted <- length(fitted_common)
 
@@ -67,7 +67,7 @@ signs[] <- sign(signs)
 power_mcmle <- lapply(res[fitted_common], "[[", "mcmle") 
 power_mcmle <- lapply(power_mcmle, function(i) {
   if (inherits(i, "error"))
-    return(matrix(NA, 4, 4))
+    return(matrix(NA, 2, 2))
   i$ci
   })
 power_mcmle <- type1_calc(power_mcmle)[,2]
@@ -77,7 +77,7 @@ power_mcmle <- type1_calc(power_mcmle)[,2]
 power_mle <- lapply(res[fitted_common], "[[", "mle") 
 power_mle <- lapply(power_mle, function(i) {
   if (inherits(i, "error"))
-    return(matrix(NA, 4, 4))
+    return(matrix(NA, 2, 2))
   i$ci
 })
 power_mle <- type1_calc(power_mle)[,2]
@@ -86,7 +86,7 @@ power_mle <- type1_calc(power_mle)[,2]
 power_rm <- lapply(res[fitted_common], "[[", "rm") 
 power_rm <- lapply(power_rm, function(i) {
   if (inherits(i, "error"))
-    return(matrix(NA, 4, 4))
+    return(matrix(NA, 2, 2))
   i$ci
 })
 power_rm <- type1_calc(power_rm)[,2]

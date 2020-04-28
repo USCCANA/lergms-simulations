@@ -12,7 +12,7 @@ experiments <- c(
 )
 
 # Colors to be used to fill the plots
-fillcols <- c("MC-MLE" = "gray", MLE="white", "RM" = "black")
+fillcols <- c(MLE="white", "MC-MLE" = "gray", "RM" = "black")
 fillcols[] <- adjustcolor(fillcols, alpha.f = .7) 
 
 e         <- experiments[1]
@@ -162,9 +162,10 @@ dat_tmp <- dat[
 # Making the sample size categorigal
 lvls <- sort(unique(dat_tmp$Size))
 dat_tmp[, Size := factor(Size, levels = lvls, labels = lvls)]
+dat_tmp[, Method := factor(Model, levels = names(fillcols))]
 
-p <- ggplot(dat_tmp, aes(y = Power, fill=Model)) +
-  geom_col(aes(x = Size, group=Model), position="dodge", color="black") +
+p <- ggplot(dat_tmp, aes(y = Power, fill=Method)) +
+  geom_col(aes(x = Size, group=Method), position="dodge", color="black") +
   theme_bw() +
   theme(text = element_text(family = "AvantGarde")) +
   scale_fill_manual(values = fillcols) +
@@ -173,7 +174,7 @@ p <- ggplot(dat_tmp, aes(y = Power, fill=Model)) +
 
 print(p)
 
-ggsave("sim-figures/power-by-model.pdf", width = 8*.8, height = 6*.8)
+ggsave("sim-figures/power.pdf", width = 8*.8, height = 6*.8)
   
 # Testing wether the difference is statistically significant. ------------------
 
@@ -181,7 +182,7 @@ ggsave("sim-figures/power-by-model.pdf", width = 8*.8, height = 6*.8)
 test <- dat_tmp[
   ,
   list(Power = sum(N_TRUE), N = sum(N)),
-  by = c("Model", "Term", "Size", "EffectSize")
+  by = c("Method", "Term", "Size", "EffectSize")
   ]
 
 # Preparing the results
@@ -200,10 +201,10 @@ for (e in Esizes) {
       tmp_test <- with(
         test[Term == term & Size == s & EffectSize == e],
         prop.test(
-          c(MLE    = Power[Model == "MLE"],
-          `MC-MLE` = Power[Model == "MC-MLE"]
+          c(MLE    = Power[Method == "MLE"],
+          `RM` = Power[Method == "RM"]
           ),
-          n = N
+          n = c(N[Method == "MLE"], N[Method == "RM"])
           )
       )
       
