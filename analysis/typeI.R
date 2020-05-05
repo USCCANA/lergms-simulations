@@ -100,9 +100,9 @@ dat <- data.frame(
   Term = rep(rep(term_name[2], nfitted), 3),
   Size = sapply(lapply(dgp[fitted_common], "[[", "size") , sum),
   Prop5 = sapply(lapply(dgp[fitted_common], "[[", "size") , function(i) i[2]/sum(i)),
-  AvgDensity = sapply(dgp[fitted_common], function(d) {
+  AvgDensity = unlist(parallel::mclapply(dgp[fitted_common], function(d) {
     mean(nedges(d$nets)/(nvertex(d$nets)*(nvertex(d$nets) - 1)))
-  })
+  }, mc.cores = 3L))
   
 )
 dat <- data.table(dat)
@@ -147,7 +147,7 @@ test <- dat_tmp[
 Sizes <- sort(unique(test$Size))
 differences <- array(
   dim = c(length(Sizes), 8), 
-  dimnames = list(Sizes, c("pvalue_rm", "chi2_rm", "pvalue_mcmle", "chi2_mcmle", "N", "MLE", "MC-MLE", "RM"))
+  dimnames = list(Sizes, c("pvalue_rm", "chi2_rm", "pvalue_mcmle", "chi2_mcmle", "N", "MLE", "RM", "MC-MLE"))
 )
 
 
@@ -223,4 +223,4 @@ tab[grepl("\\\\toprule", tab)] <-
   "\\toprule & & \\multicolumn{3}{c}{P(Type I error)} & \\multicolumn{2}{c}{$\\chi^2$}\\\\ \\cmidrule(r){3-5} \\cmidrule(r){6-7}"
 writeLines(tab, "sim-figures/typeI.tex")
 
-
+cat(tab, sep = "\n")

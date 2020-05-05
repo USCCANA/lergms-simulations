@@ -192,3 +192,19 @@ ggplot(
 ggsave("sim-figures/time.pdf", width = 8*.8, height = 6*.8)
 
 
+ggplot(dat_times, aes(x = Size, y = elapsed)) +
+  theme_bw() + 
+  # scale_fill_manual(values = fillcols) +
+  geom_jitter(
+    aes(fill = Method, group = Method),
+    height = 0,
+    colour = "gray",
+    shape  = 21,
+    alpha  = .7,
+    size   = 2
+    ) +
+  scale_y_log10()  
+  # geom_smooth()
+  
+  geom_smooth()
+  
