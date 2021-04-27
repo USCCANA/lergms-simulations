@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition=thomas
 #SBATCH --account=lc_pdt
-#SBATCH --time=04:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=16gb
 #SBATCH --mail-user=g.vegayon@gmail.com
 #SBATCH --mail-type=ALL
@@ -24,7 +24,7 @@ simfun <- function(size, par, sampler) {
 }
 
 set.seed(112)
-nsim   <- 21000
+nsim   <- 35000
 
 # Simulating -------------------------------------------------------------------
 
@@ -50,10 +50,10 @@ sizes_4_5 <- lapply(seq_len(nsim), function(i) sizes_4_5[i, ])
 library(slurmR)
 opts_slurmR$set_tmp_path("/staging/ggv")
 opts_slurmR$set_job_name("ergmito-dgp-null")
-opts_slurmR$set_opts(time = "04:00:00", account="lc_dvc", partition="conti")
+opts_slurmR$set_opts(time = "08:00:00", account="lc_dvc", partition="conti")
 opts_slurmR$verbose_on()
 
-opts_slurmR$set_opts(account="lc_pdt", partition="thomas")
+opts_slurmR$set_opts(account="lc_ggv", partition="scavenge")
 
 # Mutual model
 dgp_4_5_null <- Slurm_Map(
@@ -62,7 +62,7 @@ dgp_4_5_null <- Slurm_Map(
   },
   p        = params_3_5,
   s        = sizes_4_5,
-  njobs    = 200,
+  njobs    = 400,
   mc.cores = 1L,
   export   = c("simfun", "sampler_3_5_edges"),
   plan     = "wait",

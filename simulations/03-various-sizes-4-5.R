@@ -25,7 +25,7 @@ opts_slurmR$set_job_name("03-various-sizes-4-5-null")
 opts_slurmR$set_opts(
   account       = "lc_ggv",
   partition     = "scavenge",
-  time          = "04:00:00",
+  time          = "08:00:00",
   `mem-per-cpu` = "2G"
 )
 
